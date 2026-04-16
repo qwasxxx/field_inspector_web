@@ -1,4 +1,28 @@
 # Корень репозитория: фронтенд и env живут в frontend/, но игнорируем случайные .env в корне
+
+# Dependencies
+node_modules/
+
+# Build / cache
+dist/
+*.tsbuildinfo
+.vite/
+
+# Environment
 .env
 .env.*
+.env.*.local
 !.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
