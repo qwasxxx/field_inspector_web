@@ -1,53 +1,60 @@
-# Admin panel (supervisor web UI)
+# Мобильный офис — веб-панель руководителя производственного звена
 
-Stage 1 supervisor dashboard for an industrial equipment inspection workflow. The mobile app is used by field inspectors; this web app is for supervisors to monitor tasks, equipment, and defects.
+Веб-приложение для **руководителя производственного звена (админа)** в концепции **«Мобильный офис»**: планирование обходов, подготовка шаблонов чек-листов, контроль и анализ результатов. **Обходчики в цеху** в целевой архитектуре работают в **мобильном приложении**; их сценарий (обход → чек-лист → медиа → отправка) сходится с руководителем через **сервисы мобильного офиса** и единое хранилище данных.
 
-- **Stack:** Next.js (App Router), TypeScript, Tailwind CSS  
-- **Data:** mock JSON-like modules under `lib/data/mock/` (no backend)  
-- **Auth:** demo-only session flag in `sessionStorage` (not real authentication)  
-- **UI language:** Russian for all user-visible strings (see `docs/ADMIN_CASE_CONTEXT.md`)
+Подробнее о ролях и интеграциях: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## Run locally
+## Стек
 
-The app is in **`field_inspector_web/admin_panel`**, not in your user home folder. From `C:\Users\H O N O R` you must `cd` into that path first.
+- React (функциональные компоненты), **TypeScript strict**
+- **Vite**, **MUI**, **React Router v6**
+- **React Hook Form** + **Zod** (вход, конструктор чек-листов)
+- **SCSS Modules**
+- Состояние обхода: **subscriber store** + `useSyncExternalStore` + persist в `localStorage` (слой можно заменить на Zustand без смены UI)
+- Авторизация: мок (`features/auth/model/useAuth.ts` + `auth-context.tsx`)
 
-**Windows (CMD or PowerShell):**
+## Запуск
 
-```bat
-cd /d C:\Users\H O N O R\field_inspector_web\admin_panel
-npm install
-npm run dev
-```
-
-From the repo root:
-
-```bat
-cd C:\Users\H O N O R\field_inspector_web
+```bash
 cd admin_panel
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Use **«Войти (демо)»** on the login screen to access the dashboard.
+```bash
+npm run build
+npm run lint
+```
 
-## Scripts
+## Экраны и сценарий руководителя
 
-- `npm run dev` — development server  
-- `npm run build` — production build  
-- `npm run start` — run production server  
-- `npm run lint` — ESLint  
+| Маршрут | Назначение |
+|---------|------------|
+| `/` | **Обзор** — контроль маршрутов, очередь «отправки» (анализ результатов в MVP упрощён) |
+| `/planning` | **Планирование** — заглушка под назначение обходов на смену/день (интеграция с сервисами МО) |
+| `/checklist-builder` | **Конструктор чек-листов** — шаблоны для полевых сотрудников |
+| `/route/:id` | Демо-прохождение маршрута (в продуктиве — у обходчика в мобильном клиенте) |
 
-## Project layout (high level)
+## Архитектура кода (feature-based)
 
-- `app/` — routes (App Router), including login and main shell  
-- `components/` — layout and reusable UI  
-- `lib/data/mock/` — mock entities and demo datasets  
-- `types/` — shared TypeScript types  
-- `docs/` — developer context  
+| Слой | Назначение |
+|------|------------|
+| `entities/` | Доменные типы: маршрут, точка обхода, чек-лист, оборудование |
+| `features/auth` | Вход, `useAuth`, валидация форм |
+| `features/route` | Мапперы, хендлеры, store обхода, UI секций точки |
+| `features/checklist` | Поля при обходе; **builder**: маппер, хендлеры, `useChecklistBuilder`, хранилище шаблонов |
+| `features/equipment` | Карточка оборудования |
+| `widgets/` | `MainLayout` (Drawer + AppBar + `Outlet`), `Sidebar` |
+| `pages/` | `Login`, `Dashboard`, `PlanningPage`, `RouteExecution`, `ChecklistBuilderPage` |
+| `shared/lib` | Mock DTO, `SyncQueue`, **`CHECKLIST_TEMPLATES`**, утилиты localStorage |
 
-## Next steps (suggestions)
+Алиас импортов: `@/` → `src/`.
 
-- Replace mock modules with REST/GraphQL clients and typed DTOs  
-- Add real authentication (OIDC, sessions, or similar)  
-- Role-based navigation and audit logging  
-- Reports export (PDF/Excel) and saved filters  
+## Поведение MVP
+
+1. Вход руководителя ПЗ (демо: email/пароль → `localStorage`).
+2. Обзор: статусы маршрутов, очередь синхронизации (имитация передачи в МО).
+3. Планирование: страница-заглушка под назначение смен; ссылка на конструктор.
+4. Конструктор: CRUD шаблонов (`CHECKLIST_TEMPLATES`).
+5. Просмотр маршрута: демо точек обхода; выбор шаблона чек-листа у точки.
+6. Без реального бэкенда; точка интеграции с **сервисами мобильного офиса** и внешними ИС (ТОиР, НСИ и т.д.) заложена в `docs/ARCHITECTURE.md`.

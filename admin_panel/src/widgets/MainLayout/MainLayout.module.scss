@@ -1,0 +1,23 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+/* Растягивается на всю ширину и высоту под AppBar */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  padding: 16px 16px 24px;
+  box-sizing: border-box;
+}

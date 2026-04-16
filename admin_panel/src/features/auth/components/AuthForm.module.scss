@@ -1,0 +1,16 @@
+.card {
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.switch {
+  margin-top: 16px;
+  text-align: center;
+}

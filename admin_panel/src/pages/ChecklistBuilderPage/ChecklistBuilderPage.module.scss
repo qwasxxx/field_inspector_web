@@ -1,0 +1,10 @@
+.wrap {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}

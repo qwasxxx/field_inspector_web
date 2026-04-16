@@ -1,0 +1,19 @@
+.wrap {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.routeCard {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  height: 100%;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    box-shadow:
+      0 4px 6px rgba(15, 23, 42, 0.06),
+      0 12px 24px rgba(15, 23, 42, 0.06);
+    transform: translateY(-2px);
+  }
+}
