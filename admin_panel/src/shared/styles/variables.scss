@@ -1,0 +1,44 @@
+:root {
+  /* ===== PRIMARY BRAND (Copper) ===== */
+  --color-primary: #b87333;
+  --color-primary-hover: #a6652d;
+  --color-primary-active: #8f5526;
+
+  /* ===== SECONDARY (Rosy Gold) ===== */
+  --color-secondary: #b76e79;
+  --color-secondary-hover: #a85f6a;
+
+  /* ===== BACKGROUND ===== */
+  --color-bg: #ffffff;
+  --color-bg-soft: #f7f7f7;
+
+  /* ===== TEXT (Gray scale) ===== */
+  --color-text: #2b2b2b;
+  --color-text-secondary: #6b6b6b;
+  --color-text-disabled: #a1a1a1;
+
+  /* ===== BORDERS ===== */
+  --color-border: #e2e2e2;
+  --color-border-dark: #cfcfcf;
+
+  /* ===== STATES ===== */
+  --color-success: #2e7d32;
+  --color-warning: #ed6c02;
+  --color-error: #d32f2f;
+
+  /* ===== SEMANTIC ALPHAS (sidebar / focus) ===== */
+  --color-primary-muted-bg: rgba(184, 115, 51, 0.08);
+  --color-secondary-muted-bg: rgba(183, 110, 121, 0.08);
+  --color-focus-ring: rgba(184, 115, 51, 0.2);
+
+  /* ===== SURFACES (cards, dividers) ===== */
+  --color-card-border: rgba(43, 43, 43, 0.08);
+  --color-shadow-soft: rgba(43, 43, 43, 0.06);
+  --color-shadow-medium: rgba(43, 43, 43, 0.06);
+
+  /* ===== LOGIN / MARKETING SURFACES ===== */
+  --color-login-page-bg-start: var(--color-bg-soft);
+  --color-login-page-bg-mid: #faf8f6;
+  --color-login-page-bg-end: rgba(183, 110, 121, 0.12);
+  --color-login-card-shadow: rgba(184, 115, 51, 0.35);
+}

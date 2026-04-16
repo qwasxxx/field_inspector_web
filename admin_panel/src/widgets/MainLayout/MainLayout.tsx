@@ -14,7 +14,6 @@ import { Sidebar } from '@/widgets/Sidebar/Sidebar';
 import styles from './MainLayout.module.scss';
 
 const DRAWER_EXPANDED = 280;
-const DRAWER_COLLAPSED = 72;
 const STORAGE_KEY = 'fi_sidebar_collapsed';
 
 function readCollapsed(): boolean {
@@ -32,7 +31,7 @@ export function MainLayout() {
     });
   }, []);
 
-  const drawerWidth = collapsed ? DRAWER_COLLAPSED : DRAWER_EXPANDED;
+  const drawerWidth = collapsed ? 0 : DRAWER_EXPANDED;
 
   return (
     <Box className={styles.shell}>
@@ -48,8 +47,10 @@ export function MainLayout() {
             }),
           '& .MuiDrawer-paper': {
             width: drawerWidth,
+            minWidth: collapsed ? 0 : undefined,
             boxSizing: 'border-box',
             overflowX: 'hidden',
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             minHeight: '100vh',
@@ -58,14 +59,13 @@ export function MainLayout() {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
               }),
-            background: (theme) =>
-              `linear-gradient(180deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 48%, ${theme.palette.primary.light} 140%)`,
-            color: 'common.white',
-            borderRight: 'none',
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            borderRight: collapsed ? 'none' : undefined,
           },
         }}
       >
-        <Sidebar collapsed={collapsed} />
+        {!collapsed ? <Sidebar /> : null}
       </Drawer>
 
       <Box

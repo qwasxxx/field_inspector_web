@@ -7,9 +7,9 @@
   box-sizing: border-box;
   background: linear-gradient(
     160deg,
-    #e3f2fd 0%,
-    #f5f7fa 38%,
-    #e0f7fa 100%
+    var(--color-login-page-bg-start) 0%,
+    var(--color-login-page-bg-mid) 40%,
+    var(--color-login-page-bg-end) 100%
   );
 }
 
@@ -32,7 +32,11 @@
   height: 72px;
   margin-bottom: 12px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #0d47a1 0%, #00838f 100%);
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(13, 71, 161, 0.35);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 100%
+  );
+  color: var(--color-bg);
+  box-shadow: 0 8px 24px var(--color-login-card-shadow);
 }
