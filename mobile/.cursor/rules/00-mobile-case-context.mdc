@@ -1,0 +1,29 @@
+---
+description: Stage 1 industrial inspection mobile MVP — scope, user, language, and discipline
+alwaysApply: true
+---
+
+# Mobile case context (mandatory)
+
+This repository is a **Stage 1 mobile MVP** for **industrial / energy facility inspection rounds** (обход, осмотр оборудования). The primary user is the **inspector / field worker / обходчик**. Supervisor/manager workflows exist only as **product context**; do **not** prioritize supervisor UI unless explicitly requested.
+
+## Before writing or changing code
+
+1. Read and align with **`docs/CASE_CONTEXT.md`**.
+2. Confirm the change supports the **Stage 1 inspector mobile flow** only (task list, task details, route/equipment, inspection, checklist, measurements, photos, defects, offline/sync, submit).
+3. Prefer the **smallest clean slice**; avoid unrelated edits, premature refactors, and scope creep.
+
+## UI language
+
+The app supports **Russian** (default), **Turkish**, and **English** for all **user-visible** text. Strings must come from the **central localization layer** (`lib/core/localization/`, e.g. `AppStrings` / `context.strings`); do **not** hardcode visible copy in widgets when adding features—extend the same structure. **Technical identifiers** (classes, files, APIs, variables) stay **English**.
+
+## Technical discipline
+
+- Follow **Flutter** best practices; keep structure **simple and extendable**; think **offline-first** and future backend compatibility.
+- **Supabase** (storage + Postgres) is allowed for **inspection reports and media**; reuse the existing small integration pattern; do not duplicate ad-hoc Supabase calls across screens without a focused helper.
+- Do **not** add dependencies, change architecture, routing, or platform/build config **without clear need**; do not introduce heavy abstractions or new state-management stacks early.
+- Do **not** implement **out-of-scope** items from `docs/CASE_CONTEXT.md` (e.g. SCADA/PLC, IoT, digital twin, predictive maintenance, enterprise role matrix, full ERP, in-app web admin, heavy analytics) **unless explicitly requested**.
+
+## Priority
+
+Optimize for a **fast, clear, industrial field tool**: large tap targets, obvious status and progress, minimal decoration, low cognitive load.
