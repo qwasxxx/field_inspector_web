@@ -24,6 +24,7 @@ import {
   type LoginFormValues,
 } from '@/features/auth/model/validation';
 import { API_BASE } from '@/shared/api/client';
+import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
 import styles from './AuthForm.module.scss';
 
 export function AuthForm() {
@@ -69,7 +70,13 @@ export function AuthForm() {
       />
       <CardContent sx={{ pt: 0 }}>
         <Alert severity="info" icon={false} sx={{ mb: 2, borderRadius: 2 }}>
-          {API_BASE ? (
+          {isSupabaseConfigured() ? (
+            <>
+              Вход через <strong>Supabase Auth</strong> (email и пароль из вашего
+              проекта). Разделы «Сотрудники», «Задания» и «Входящие запросы» доступны
+              при роли <code>admin</code> в таблице <code>profiles</code>.
+            </>
+          ) : API_BASE ? (
             <>
               Вход через API: <strong>{API_BASE}</strong>. Учётная запись по
               умолчанию из сида бэкенда (см. переменные{' '}
@@ -77,8 +84,8 @@ export function AuthForm() {
             </>
           ) : (
             <>
-              Демо без API: валидный email и пароль сохраняют флаг в{' '}
-              <strong>localStorage</strong>.
+              Демо без API и без Supabase: валидный email и пароль сохраняют флаг
+              в <strong>localStorage</strong>.
             </>
           )}
         </Alert>

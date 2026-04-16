@@ -24,7 +24,7 @@ const navItems: NavItem[] = [
   { label: 'Сотрудники', path: '/employees' },
   { label: 'Объекты', path: '/objects' },
   { label: 'Задания', path: '/tasks' },
-  { label: 'Заявки', path: '/task-requests' },
+  { label: 'Входящие запросы', path: '/task-requests' },
   { label: 'Планирование обходов', path: '/planning' },
   { label: 'Чек-листы', path: '/checklist-builder' },
   { label: 'Дефекты', path: '/defects' },
@@ -103,7 +103,7 @@ export function Sidebar() {
       <Box className={styles.footer}>
         <Divider className={styles.footerDivider} />
         <ListItemButton
-          onClick={() => logout()}
+          onClick={() => void logout()}
           className={styles.logoutItem}
           sx={{
             borderRadius: 2,
