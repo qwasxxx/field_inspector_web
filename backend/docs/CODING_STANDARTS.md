@@ -371,13 +371,3 @@ async def get_users() -> list[UserDTO]:
 * расширяемым
 * тестируемым
 * строго разделённым по слоям
-
----
-
-Если хочешь дальше — могу сделать тебе:
-
-👉 Cursor prompt для генерации backend-а по этим стандартам
-👉 Или сразу full boilerplate FastAPI проекта (production ready)
-👉 Или адаптацию под Django / Flask
-
-Скажи 👍
