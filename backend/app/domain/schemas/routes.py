@@ -1,4 +1,4 @@
-"""Route DTOs aligned with admin_panel `routeDtos.ts`."""
+"""Route DTOs aligned with frontend `routeDtos.ts`."""
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
