@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -10,15 +10,34 @@ import {
 } from '@mui/material';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { useChecklistBuilder } from '@/features/checklist/builder/useChecklistBuilder';
-import { useChecklistTemplatesList } from '@/features/checklist/builder/checklistTemplatesStore';
+import {
+  setChecklistTemplates,
+  useChecklistTemplatesList,
+} from '@/features/checklist/builder/checklistTemplatesStore';
 import type { ChecklistTemplate } from '@/entities/checklist/checklist.types';
 import { ChecklistEditor } from '@/pages/ChecklistBuilderPage/components/ChecklistEditor';
+import { API_BASE, apiFetch } from '@/shared/api/client';
 import styles from './ChecklistBuilderPage.module.scss';
 
 export function ChecklistBuilderPage() {
   const templates = useChecklistTemplatesList();
   const { deleteTemplate, createEmptyTemplate } = useChecklistBuilder();
   const [draft, setDraft] = useState<ChecklistTemplate | null>(null);
+
+  useEffect(() => {
+    if (!API_BASE) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await apiFetch('/api/v1/checklist-templates');
+      if (!res.ok || cancelled) return;
+      const data: ChecklistTemplate[] = await res.json();
+      if (cancelled) return;
+      setChecklistTemplates(data);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (draft) {
     const isNew = !templates.some((t) => t.id === draft.id);
@@ -98,13 +117,20 @@ export function ChecklistBuilderPage() {
                   size="small"
                   color="error"
                   onClick={() => {
-                    if (
-                      window.confirm(
-                        `Удалить шаблон «${t.title}»? Его нельзя будет выбрать в обходе.`,
-                      )
-                    ) {
-                      deleteTemplate(t.id);
-                    }
+                    void (async () => {
+                      if (
+                        !window.confirm(
+                          `Удалить шаблон «${t.title}»? Его нельзя будет выбрать в обходе.`,
+                        )
+                      ) {
+                        return;
+                      }
+                      try {
+                        await deleteTemplate(t.id);
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    })();
                   }}
                 >
                   Удалить

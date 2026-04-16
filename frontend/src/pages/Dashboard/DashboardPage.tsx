@@ -8,8 +8,16 @@ import {
   Typography,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import type {
+  CriticalDefectAlert,
+  DashboardEmployee,
+  DashboardMetric,
+  ShiftContext,
+  ShiftEvent,
+  ShiftProgressItem,
+} from '@/entities/dashboard/model/types';
 import type { Route } from '@/entities/route/model/types';
 import { RouteMapper } from '@/features/route/mappers/RouteMapper';
 import {
@@ -21,6 +29,7 @@ import {
   SHIFT_PROGRESS_MOCK,
 } from '@/shared/lib/mock/dashboardAdmin.mock';
 import { ROUTES_MOCK } from '@/shared/lib/mock/routes.mock';
+import { API_BASE, apiFetch } from '@/shared/api/client';
 import { DashboardCriticalAlert } from './components/DashboardCriticalAlert';
 import { DashboardEmployeesColumn } from './components/DashboardEmployeesColumn';
 import { DashboardMetricCards } from './components/DashboardMetricCards';
@@ -28,13 +37,66 @@ import { DashboardObjectProgress } from './components/DashboardObjectProgress';
 import { DashboardShiftEvents } from './components/DashboardShiftEvents';
 import styles from './DashboardPage.module.scss';
 
-const routesPreview: Route[] = RouteMapper.listToViewModels(ROUTES_MOCK);
+type DashboardBundleJson = {
+  shiftContext: ShiftContext;
+  metrics: DashboardMetric[];
+  employees: DashboardEmployee[];
+  events: ShiftEvent[];
+  progress: ShiftProgressItem[];
+  criticalAlert: CriticalDefectAlert | null;
+};
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
+  const [ctx, setCtx] = useState<ShiftContext>(SHIFT_CONTEXT_MOCK);
+  const [criticalAlert, setCriticalAlert] = useState<CriticalDefectAlert | null>(
+    CRITICAL_DEFECT_ALERT_MOCK,
+  );
+  const [metrics, setMetrics] = useState<DashboardMetric[]>(DASHBOARD_METRICS_MOCK);
+  const [employees, setEmployees] = useState<DashboardEmployee[]>(
+    EMPLOYEES_ON_SHIFT_MOCK,
+  );
+  const [events, setEvents] = useState<ShiftEvent[]>(SHIFT_EVENTS_MOCK);
+  const [progress, setProgress] = useState<ShiftProgressItem[]>(SHIFT_PROGRESS_MOCK);
+  const [routesPreview, setRoutesPreview] = useState<Route[]>(
+    RouteMapper.listToViewModels(ROUTES_MOCK),
+  );
 
-  const ctx = SHIFT_CONTEXT_MOCK;
+  useEffect(() => {
+    if (!API_BASE) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await apiFetch('/api/v1/dashboard');
+      if (!res.ok || cancelled) return;
+      const data: DashboardBundleJson = await res.json();
+      if (cancelled) return;
+      setCtx(data.shiftContext);
+      setCriticalAlert(data.criticalAlert);
+      setMetrics(data.metrics);
+      setEmployees(data.employees);
+      setEvents(data.events);
+      setProgress(data.progress);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!API_BASE) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await apiFetch('/api/v1/routes');
+      if (!res.ok || cancelled) return;
+      const dtos = await res.json();
+      if (cancelled) return;
+      setRoutesPreview(RouteMapper.listToViewModels(dtos));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <Stack spacing={3} className={styles.wrap} sx={{ width: '100%' }}>
@@ -69,12 +131,14 @@ export function DashboardPage() {
         </Button>
       </Stack>
 
-      <DashboardCriticalAlert
-        alert={CRITICAL_DEFECT_ALERT_MOCK}
-        onView={() => navigate('/defects')}
-      />
+      {criticalAlert ? (
+        <DashboardCriticalAlert
+          alert={criticalAlert}
+          onView={() => navigate('/defects')}
+        />
+      ) : null}
 
-      <DashboardMetricCards metrics={DASHBOARD_METRICS_MOCK} />
+      <DashboardMetricCards metrics={metrics} />
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
@@ -98,10 +162,10 @@ export function DashboardPage() {
               alignItems: 'stretch',
             }}
           >
-            <DashboardEmployeesColumn employees={EMPLOYEES_ON_SHIFT_MOCK} />
-            <DashboardShiftEvents events={SHIFT_EVENTS_MOCK} />
+            <DashboardEmployeesColumn employees={employees} />
+            <DashboardShiftEvents events={events} />
           </Box>
-          <DashboardObjectProgress items={SHIFT_PROGRESS_MOCK} />
+          <DashboardObjectProgress items={progress} />
         </>
       ) : null}
 

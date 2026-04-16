@@ -15,6 +15,7 @@ import {
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/model/useAuth';
@@ -22,11 +23,13 @@ import {
   loginSchema,
   type LoginFormValues,
 } from '@/features/auth/model/validation';
+import { API_BASE } from '@/shared/api/client';
 import styles from './AuthForm.module.scss';
 
 export function AuthForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -37,9 +40,16 @@ export function AuthForm() {
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = () => {
-    login();
-    navigate('/', { replace: true });
+  const onSubmit = async (values: LoginFormValues) => {
+    setSubmitError(null);
+    try {
+      await login(values);
+      navigate('/', { replace: true });
+    } catch (e) {
+      setSubmitError(
+        e instanceof Error ? e.message : 'Не удалось выполнить вход',
+      );
+    }
   };
 
   return (
@@ -59,9 +69,24 @@ export function AuthForm() {
       />
       <CardContent sx={{ pt: 0 }}>
         <Alert severity="info" icon={false} sx={{ mb: 2, borderRadius: 2 }}>
-          Демо: валидный email и пароль сохраняют сессию в{' '}
-          <strong>localStorage</strong>. Бэкенд не используется.
+          {API_BASE ? (
+            <>
+              Вход через API: <strong>{API_BASE}</strong>. Учётная запись по
+              умолчанию из сида бэкенда (см. переменные{' '}
+              <code>SEED_ADMIN_EMAIL</code> / <code>SEED_ADMIN_PASSWORD</code>).
+            </>
+          ) : (
+            <>
+              Демо без API: валидный email и пароль сохраняют флаг в{' '}
+              <strong>localStorage</strong>.
+            </>
+          )}
         </Alert>
+        {submitError ? (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {submitError}
+          </Alert>
+        ) : null}
 
         <Box
           component="form"

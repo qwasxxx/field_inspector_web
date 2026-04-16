@@ -5,35 +5,57 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import type { LoginFormValues } from '@/features/auth/model/validation';
+import {
+  API_BASE,
+  apiLoginJson,
+  getStoredToken,
+  setStoredToken,
+} from '@/shared/api/client';
 
-const STORAGE_KEY = 'fi_auth';
+const LEGACY_AUTH_KEY = 'fi_auth';
 
 export type AuthContextValue = {
-  login: () => void;
+  login: (credentials: LoginFormValues) => Promise<void>;
   logout: () => void;
   isAuthenticated: () => boolean;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readStored(): boolean {
-  return localStorage.getItem(STORAGE_KEY) === '1';
+function readInitialAuthenticated(): boolean {
+  if (API_BASE) return Boolean(getStoredToken());
+  return localStorage.getItem(LEGACY_AUTH_KEY) === '1';
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authenticated, setAuthenticated] = useState(readStored);
+  const [authenticated, setAuthenticated] = useState(readInitialAuthenticated);
 
-  const login = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, '1');
+  const login = useCallback(async (credentials: LoginFormValues) => {
+    if (API_BASE) {
+      const data = await apiLoginJson({
+        email: credentials.email,
+        password: credentials.password,
+      });
+      setStoredToken(data.access_token);
+      localStorage.setItem(LEGACY_AUTH_KEY, '1');
+    } else {
+      localStorage.setItem(LEGACY_AUTH_KEY, '1');
+    }
     setAuthenticated(true);
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    setStoredToken(null);
+    localStorage.removeItem(LEGACY_AUTH_KEY);
     setAuthenticated(false);
   }, []);
 
-  const isAuthenticated = useCallback(() => authenticated, [authenticated]);
+  const isAuthenticated = useCallback(() => {
+    if (!authenticated) return false;
+    if (API_BASE) return Boolean(getStoredToken());
+    return localStorage.getItem(LEGACY_AUTH_KEY) === '1';
+  }, [authenticated]);
 
   const value = useMemo(
     () => ({ login, logout, isAuthenticated }),

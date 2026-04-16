@@ -50,7 +50,7 @@ export function ChecklistEditor({ template, isNew, onDone }: Props) {
     reset(toFormValues(template));
   }, [template, reset]);
 
-  const onSubmit = (values: ChecklistTemplateFormValues) => {
+  const onSubmit = async (values: ChecklistTemplateFormValues) => {
     const saved: ChecklistTemplate = {
       id: template.id,
       title: values.title.trim(),
@@ -61,7 +61,7 @@ export function ChecklistEditor({ template, isNew, onDone }: Props) {
         required: i.required,
       })),
     };
-    saveChecklist(saved);
+    await saveChecklist(saved);
     onDone();
   };
 

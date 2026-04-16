@@ -5,6 +5,7 @@ import {
   setChecklistTemplates,
 } from '@/features/checklist/builder/checklistTemplatesStore';
 import { ChecklistBuilderMapper } from '@/features/checklist/builder/checklistBuilder.mapper';
+import { API_BASE, apiFetch } from '@/shared/api/client';
 
 export function useChecklistBuilder() {
   const addField = useCallback((draft: ChecklistTemplate): ChecklistTemplate => ({
@@ -34,7 +35,26 @@ export function useChecklistBuilder() {
     [],
   );
 
-  const saveChecklist = useCallback((template: ChecklistTemplate) => {
+  const saveChecklist = useCallback(async (template: ChecklistTemplate) => {
+    if (API_BASE) {
+      const list = getChecklistTemplates();
+      const exists = list.some((t) => t.id === template.id);
+      const path = exists
+        ? `/api/v1/checklist-templates/${encodeURIComponent(template.id)}`
+        : '/api/v1/checklist-templates';
+      const method = exists ? 'PUT' : 'POST';
+      const body = exists
+        ? JSON.stringify({ title: template.title, items: template.items })
+        : JSON.stringify({
+            id: template.id,
+            title: template.title,
+            items: template.items,
+          });
+      const res = await apiFetch(path, { method, body });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+    }
     const list = getChecklistTemplates();
     const idx = list.findIndex((t) => t.id === template.id);
     const next =
@@ -44,7 +64,16 @@ export function useChecklistBuilder() {
     setChecklistTemplates(next);
   }, []);
 
-  const deleteTemplate = useCallback((id: string) => {
+  const deleteTemplate = useCallback(async (id: string) => {
+    if (API_BASE) {
+      const res = await apiFetch(
+        `/api/v1/checklist-templates/${encodeURIComponent(id)}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+    }
     setChecklistTemplates(getChecklistTemplates().filter((t) => t.id !== id));
   }, []);
 
