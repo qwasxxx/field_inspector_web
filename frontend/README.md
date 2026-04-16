@@ -4,6 +4,8 @@
 
 Подробнее о ролях и интеграциях: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+Стандарты разработки UI: [`docs/CODING_STANDAERTS.md`](docs/CODING_STANDAERTS.md).
+
 ## Стек
 
 - React (функциональные компоненты), **TypeScript strict**
@@ -16,7 +18,7 @@
 ## Запуск
 
 ```bash
-cd admin_panel
+cd frontend
 npm install
 npm run dev
 ```
@@ -26,6 +28,10 @@ npm run build
 npm run lint
 ```
 
+### Переменные окружения (только в этой папке)
+
+Скопируйте `.env.example` в **`.env.local` внутри `frontend/`** и укажите `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`. Vite читает `.env*` только из каталога `frontend`. Файл `.env.local` не коммитьте.
+
 ## Экраны и сценарий руководителя
 
 | Маршрут | Назначение |
@@ -34,6 +40,12 @@ npm run lint
 | `/planning` | **Планирование** — заглушка под назначение обходов на смену/день (интеграция с сервисами МО) |
 | `/checklist-builder` | **Конструктор чек-листов** — шаблоны для полевых сотрудников |
 | `/route/:id` | Демо-прохождение маршрута (в продуктиве — у обходчика в мобильном клиенте) |
+| `/settings` | Настройки (заглушка) |
+| `/workers` | Обходчики (`profiles`, role=worker), только просмотр |
+| `/tasks` | Список заданий (`inspection_tasks`) |
+| `/tasks/create` | Создание задания и позиций |
+| `/tasks/:id` | Карточка задания |
+| `/task-requests` | Заявки (`task_requests`), одобрение / отклонение |
 
 ## Архитектура кода (feature-based)
 

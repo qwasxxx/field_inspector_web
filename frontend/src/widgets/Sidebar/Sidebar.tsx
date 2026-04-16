@@ -20,9 +20,11 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: 'Дашборд', path: '/' },
+  { label: 'Обходчики', path: '/workers' },
   { label: 'Сотрудники', path: '/employees' },
   { label: 'Объекты', path: '/objects' },
   { label: 'Задания', path: '/tasks' },
+  { label: 'Заявки', path: '/task-requests' },
   { label: 'Планирование обходов', path: '/planning' },
   { label: 'Чек-листы', path: '/checklist-builder' },
   { label: 'Дефекты', path: '/defects' },
