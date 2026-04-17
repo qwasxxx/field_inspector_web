@@ -15,6 +15,10 @@ import { TaskDetailPage } from '@/pages/TasksPage/TaskDetailPage';
 import { TasksListPage } from '@/pages/TasksPage/TasksListPage';
 import { WorkersPage } from '@/pages/WorkersPage/WorkersPage';
 import { TopologyPage } from '@/pages/TopologyPage/TopologyPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage/AnalyticsPage';
+import { DefectsPage } from '@/pages/DefectsPage/DefectsPage';
+import { ReportDetailPage } from '@/pages/ReportsPage/ReportDetailPage';
+import { ReportsListPage } from '@/pages/ReportsPage/ReportsListPage';
 import { MainLayout } from '@/widgets/MainLayout/MainLayout';
 
 export function AppRouter() {
@@ -47,9 +51,10 @@ export function AppRouter() {
         <Route path="task-requests" element={<TaskRequestsPage />} />
         <Route path="planning" element={<PlanningPage />} />
         <Route path="checklist-builder" element={<ChecklistBuilderPage />} />
-        <Route path="defects" element={<PlaceholderPage title="Дефекты" />} />
-        <Route path="analytics" element={<PlaceholderPage title="Аналитика" />} />
-        <Route path="reports" element={<PlaceholderPage title="Отчёты" />} />
+        <Route path="defects" element={<DefectsPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="reports/:id" element={<ReportDetailPage />} />
+        <Route path="reports" element={<ReportsListPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="route/:id" element={<RouteExecutionPage />} />
       </Route>

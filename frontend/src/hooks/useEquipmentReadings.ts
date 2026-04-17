@@ -43,26 +43,31 @@ export type EquipmentModalStats = {
   lastReadingAt: string | null;
   lastInspectionAt: string | null;
   lastHasDeviation: boolean;
-  readings7d: number;
-  inspections7d: number;
+  readingsInPeriod: number;
+  inspectionsInPeriod: number;
+  periodDays: 7 | 30;
 };
 
-function emptyModalStats(): EquipmentModalStats {
+function emptyModalStats(periodDays: 7 | 30 = 7): EquipmentModalStats {
   return {
     lastReadingAt: null,
     lastInspectionAt: null,
     lastHasDeviation: false,
-    readings7d: 0,
-    inspections7d: 0,
+    readingsInPeriod: 0,
+    inspectionsInPeriod: 0,
+    periodDays,
   };
 }
 
 export async function fetchEquipmentModalStats(
   equipmentId: string,
+  periodDays: 7 | 30 = 7,
 ): Promise<EquipmentModalStats> {
-  if (!isSupabaseConfigured()) return emptyModalStats();
+  if (!isSupabaseConfigured()) return emptyModalStats(periodDays);
   const supabase = getSupabaseClient();
-  const from7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const from = new Date(
+    Date.now() - periodDays * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   const { data: latest, error: e1 } = await supabase
     .from('equipment_readings')
@@ -72,7 +77,7 @@ export async function fetchEquipmentModalStats(
     .limit(1)
     .maybeSingle();
 
-  if (e1) return emptyModalStats();
+  if (e1) return emptyModalStats(periodDays);
 
   const { data: lastInsp } = await supabase
     .from('equipment_readings')
@@ -83,18 +88,18 @@ export async function fetchEquipmentModalStats(
     .limit(1)
     .maybeSingle();
 
-  const { count: readings7d } = await supabase
+  const { count: readingsInPeriod } = await supabase
     .from('equipment_readings')
     .select('id', { count: 'exact', head: true })
     .eq('equipment_id', equipmentId)
-    .gte('recorded_at', from7);
+    .gte('recorded_at', from);
 
-  const { count: inspections7d } = await supabase
+  const { count: inspectionsInPeriod } = await supabase
     .from('equipment_readings')
     .select('id', { count: 'exact', head: true })
     .eq('equipment_id', equipmentId)
     .eq('source', 'inspection')
-    .gte('recorded_at', from7);
+    .gte('recorded_at', from);
 
   const row = latest as { recorded_at: string; has_deviation: boolean } | null;
 
@@ -102,8 +107,9 @@ export async function fetchEquipmentModalStats(
     lastReadingAt: row?.recorded_at ?? null,
     lastInspectionAt: (lastInsp as { recorded_at: string } | null)?.recorded_at ?? null,
     lastHasDeviation: row?.has_deviation ?? false,
-    readings7d: readings7d ?? 0,
-    inspections7d: inspections7d ?? 0,
+    readingsInPeriod: readingsInPeriod ?? 0,
+    inspectionsInPeriod: inspectionsInPeriod ?? 0,
+    periodDays,
   };
 }
 
