@@ -8,6 +8,8 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
+import type { LucideIcon } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/model/useAuth';
@@ -16,6 +18,7 @@ import styles from './Sidebar.module.scss';
 type NavItem = {
   label: string;
   path: string;
+  Icon?: LucideIcon;
 };
 
 const navItems: NavItem[] = [
@@ -23,6 +26,7 @@ const navItems: NavItem[] = [
   { label: 'Обходчики', path: '/workers' },
   { label: 'Сотрудники', path: '/employees' },
   { label: 'Объекты', path: '/objects' },
+  { label: 'Схема объектов', path: '/topology', Icon: GitBranch },
   { label: 'Задания', path: '/tasks' },
   { label: 'Входящие запросы', path: '/task-requests' },
   { label: 'Планирование обходов', path: '/planning' },
@@ -76,6 +80,7 @@ export function Sidebar() {
       <List dense disablePadding sx={{ px: 1.5, flex: 1 }}>
         {navItems.map((item) => {
           const selected = isNavSelected(location.pathname, item.path);
+          const Icon = item.Icon;
           const button = (
             <ListItemButton
               component={RouterLink}
@@ -89,6 +94,11 @@ export function Sidebar() {
                 minHeight: 48,
               }}
             >
+              {Icon ? (
+                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  <Icon size={20} strokeWidth={1.75} />
+                </ListItemIcon>
+              ) : null}
               <ListItemText
                 primary={item.label}
                 primaryTypographyProps={{ fontWeight: selected ? 700 : 500 }}
