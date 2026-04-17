@@ -2,8 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
 import { PublicRoute } from '@/app/router/PublicRoute';
 import { ObjectsPage } from '@/features/objects/ObjectsPage';
-import { PlaceholderPage } from '@/pages/Common/PlaceholderPage';
-import { SettingsPage } from '@/pages/SettingsPage/SettingsPage';
 import { ChecklistBuilderPage } from '@/pages/ChecklistBuilderPage/ChecklistBuilderPage';
 import { DashboardPage } from '@/pages/Dashboard/DashboardPage';
 import { PlanningPage } from '@/pages/PlanningPage/PlanningPage';
@@ -42,7 +40,6 @@ export function AppRouter() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="workers" element={<WorkersPage />} />
-        <Route path="employees" element={<PlaceholderPage title="Сотрудники" />} />
         <Route path="objects" element={<ObjectsPage />} />
         <Route path="topology" element={<TopologyPage />} />
         <Route path="tasks/create" element={<TaskCreatePage />} />
@@ -55,7 +52,6 @@ export function AppRouter() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="reports/:id" element={<ReportDetailPage />} />
         <Route path="reports" element={<ReportsListPage />} />
-        <Route path="settings" element={<SettingsPage />} />
         <Route path="route/:id" element={<RouteExecutionPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

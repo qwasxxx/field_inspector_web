@@ -21,7 +21,6 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: 'Дашборд', path: '/' },
   { label: 'Обходчики', path: '/workers' },
-  { label: 'Сотрудники', path: '/employees' },
   { label: 'Объекты', path: '/objects' },
   { label: 'Схема объектов', path: '/topology' },
   { label: 'Задания', path: '/tasks' },
@@ -31,7 +30,6 @@ const navItems: NavItem[] = [
   { label: 'Дефекты', path: '/defects' },
   { label: 'Аналитика', path: '/analytics' },
   { label: 'Отчёты', path: '/reports' },
-  { label: 'Настройки', path: '/settings' },
 ];
 
 function isNavSelected(pathname: string, path: string): boolean {

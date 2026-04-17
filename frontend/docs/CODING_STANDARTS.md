@@ -335,7 +335,6 @@ export type NavigateFn = (path: string) => void;
 ```ts
 export const ROUTE_KEYS = {
   HOME: 'home',
-  SETTINGS: 'settings',
 } as const;
 
 export const ROUTE_CONFIG = {
