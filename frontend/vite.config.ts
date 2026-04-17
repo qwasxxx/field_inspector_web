@@ -26,4 +26,9 @@ export default defineConfig({
       '/health': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
+  /** `vite preview` на Railway / других PaaS — иначе «Blocked request: host is not allowed». */
+  preview: {
+    host: true,
+    allowedHosts: true,
+  },
 });
