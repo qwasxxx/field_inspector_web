@@ -1,4 +1,14 @@
-import { Alert, Box, Chip, CircularProgress, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Chip,
+  CircularProgress,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -14,6 +24,12 @@ import {
   fetchDashboardBundle,
 } from '@/features/factory/services/dashboardAdminApi';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
+import {
+  exportIconButtonSx,
+  exportToExcel,
+  formatDateForFilename,
+  sanitizeFilenamePart,
+} from '@/utils/exportUtils';
 import { DashboardCriticalAlert } from './components/DashboardCriticalAlert';
 import { DashboardEmployeesColumn } from './components/DashboardEmployeesColumn';
 import { DashboardMetricCards } from './components/DashboardMetricCards';
@@ -75,6 +91,41 @@ export function DashboardPage() {
     };
   }, [configured]);
 
+  const handleExportExcel = () => {
+    const mVal = (id: string) => metrics.find((m) => m.id === id)?.value ?? '—';
+    const shiftSheet: (string | number)[][] = [
+      ['Смена', ctx.shiftNumber],
+      ['Дата', new Date().toLocaleDateString('ru-RU')],
+      ['Выполнено объектов', mVal('m1')],
+      ['Активных обходчиков', mVal('m2')],
+      ['Дефектов за смену', mVal('m3')],
+      ['Среднее время на объект', mVal('m4')],
+    ];
+    const empRows = employees.map((e) => [e.name, e.locationHint, e.statusLabel]);
+    const evRows = events.map((ev) => [ev.time, ev.title, ev.detail]);
+    const shiftFn = sanitizeFilenamePart(ctx.shiftNumber);
+    exportToExcel(
+      [
+        {
+          name: 'Смена',
+          headers: ['Показатель', 'Значение'],
+          rows: shiftSheet,
+        },
+        {
+          name: 'Сотрудники',
+          headers: ['ФИО', 'Задание', 'Статус'],
+          rows: empRows,
+        },
+        {
+          name: 'События',
+          headers: ['Время', 'Событие', 'Описание'],
+          rows: evRows,
+        },
+      ],
+      `dashboard_shift_${shiftFn}_${formatDateForFilename()}.xlsx`,
+    );
+  };
+
   return (
     <Stack spacing={3} className={styles.wrap} sx={{ width: '100%' }}>
       <Stack
@@ -84,9 +135,22 @@ export function DashboardPage() {
         spacing={2}
       >
         <Box>
-          <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
-            Дашборд — Смена №{ctx.shiftNumber}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" sx={{ mb: 1 }}>
+            <Typography variant="h4" component="h1" fontWeight={700}>
+              Дашборд — Смена №{ctx.shiftNumber}
+            </Typography>
+            <Tooltip title="Экспорт Excel">
+              <IconButton
+                size="small"
+                onClick={handleExportExcel}
+                disabled={loading}
+                aria-label="Экспорт Excel"
+                sx={exportIconButtonSx}
+              >
+                <Download size={16} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
           <Typography variant="body2" color="text.secondary">
             {ctx.dateLabel} • {ctx.siteLabel}
           </Typography>

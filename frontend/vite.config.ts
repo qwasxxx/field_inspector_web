@@ -15,6 +15,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: '127.0.0.1',
+    port: 5173,
     proxy: {
       // В dev запросы на тот же origin (5173) → прокси на FastAPI без CORS и без жёсткой привязки к 127.0.0.1 в браузере.
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },

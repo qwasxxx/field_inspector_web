@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Paper,
   Table,
@@ -11,6 +12,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { Download } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
@@ -20,6 +22,25 @@ import {
 import { defectPriorityRu } from '@/pages/ReportsPage/reportDisplay';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
+import {
+  exportOutlineButtonSx,
+  exportToExcel,
+  formatDateForFilename,
+  PRIORITY_LABELS,
+} from '@/utils/exportUtils';
+
+function splitEquipmentLabel(equipmentLabel: string | null | undefined): {
+  name: string;
+  code: string;
+} {
+  const label = (equipmentLabel ?? '').trim();
+  if (!label) return { name: '—', code: '—' };
+  const parts = label.split(' · ').map((s) => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return { name: parts[0], code: parts.slice(1).join(' · ') };
+  }
+  return { name: parts[0], code: '—' };
+}
 
 export function DefectsPage() {
   const configured = isSupabaseConfigured();
@@ -46,14 +67,69 @@ export function DefectsPage() {
     };
   }, [configured]);
 
+  const handleExportExcel = () => {
+    const exportRows = rows.map((r) => {
+      const { name, code } = splitEquipmentLabel(r.equipment_label);
+      const pr = (r.defect_priority as string | null | undefined)?.toLowerCase() ?? '';
+      const priorityRu = pr ? PRIORITY_LABELS[pr] ?? defectPriorityRu(r.defect_priority as string | null) : '—';
+      return [
+        formatDateTime(r.created_at as string | undefined),
+        r.task_title ?? '—',
+        name,
+        code,
+        priorityRu,
+        r.defect_description ? String(r.defect_description) : '—',
+      ];
+    });
+    exportToExcel(
+      [
+        {
+          name: 'Дефекты',
+          headers: [
+            'Дата',
+            'Задание',
+            'Оборудование',
+            'Код оборудования',
+            'Важность',
+            'Описание дефекта',
+          ],
+          rows: exportRows,
+        },
+      ],
+      `defects_${formatDateForFilename()}.xlsx`,
+    );
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
-      <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
-        Дефекты
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Отчёты, в которых обходчик отметил дефект. Подробности — в карточке отчёта.
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Box>
+          <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
+            Дефекты
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Отчёты, в которых обходчик отметил дефект. Подробности — в карточке отчёта.
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          startIcon={<Download size={16} style={{ marginRight: 6 }} />}
+          onClick={handleExportExcel}
+          disabled={loading || !configured}
+          sx={exportOutlineButtonSx}
+        >
+          ⬇ Экспорт Excel
+        </Button>
+      </Box>
 
       {!configured ? (
         <Alert severity="warning">Подключение к серверу не настроено.</Alert>

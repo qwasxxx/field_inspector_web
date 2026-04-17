@@ -1,4 +1,5 @@
-import { Alert, Box, CircularProgress, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
+import { Download } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import {
@@ -17,6 +18,12 @@ import {
   type ReportsPerDayPoint,
 } from '@/features/factory/services/analyticsOverviewApi';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
+import {
+  exportOutlineButtonSx,
+  exportToExcel,
+  formatDateForFilename,
+  formatDateTimeRu,
+} from '@/utils/exportUtils';
 
 function StatCard({
   title,
@@ -76,6 +83,33 @@ export function AnalyticsPage() {
     };
   }, [configured]);
 
+  const handleExportExcel = () => {
+    const now = new Date();
+    const summaryRows: (string | number)[][] = [
+      ['Всего заданий', overview?.tasksTotal ?? '—'],
+      ['Завершено заданий', overview?.tasksCompleted ?? '—'],
+      ['Отчётов за 30 дней', overview?.reportsLast30d ?? '—'],
+      ['Дефектов за 30 дней', overview?.defectsLast30d ?? '—'],
+      ['Дата экспорта', formatDateTimeRu(now)],
+    ];
+    const perDayRows = chart.map((p) => [p.label, p.count]);
+    exportToExcel(
+      [
+        {
+          name: 'Сводка',
+          headers: ['Показатель', 'Значение'],
+          rows: summaryRows,
+        },
+        {
+          name: 'По дням',
+          headers: ['Дата', 'Количество отчётов'],
+          rows: perDayRows,
+        },
+      ],
+      `analytics_${formatDateForFilename()}.xlsx`,
+    );
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
       <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
@@ -127,6 +161,16 @@ export function AnalyticsPage() {
               subtitle="Отмечено в отчётах"
             />
           </Box>
+
+          <Button
+            variant="outlined"
+            startIcon={<Download size={16} style={{ marginRight: 6 }} />}
+            onClick={handleExportExcel}
+            disabled={loading}
+            sx={{ ...exportOutlineButtonSx, mb: 3 }}
+          >
+            ⬇ Экспорт Excel
+          </Button>
 
           <Paper variant="outlined" sx={{ p: 2.5 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>

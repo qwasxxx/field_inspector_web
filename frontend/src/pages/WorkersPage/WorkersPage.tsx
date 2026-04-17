@@ -21,12 +21,20 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkers } from '@/features/factory/hooks/useWorkers';
+import { fetchWorkers } from '@/features/factory/services/workersApi';
 import { createWorkerAccount } from '@/features/factory/services/workersAdminApi';
 import { API_BASE } from '@/shared/api/client';
+import { formatDateTime } from '@/shared/lib/formatDate';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
+import {
+  exportOutlineButtonSx,
+  exportToExcel,
+  formatDateForFilename,
+} from '@/utils/exportUtils';
 
 export function WorkersPage() {
   const navigate = useNavigate();
@@ -63,6 +71,32 @@ export function WorkersPage() {
     setEmail('');
     setPassword('');
     setIsActive(true);
+  };
+
+  const handleExportExcel = async () => {
+    const { data, error: err } = await fetchWorkers({ onlyActive: false });
+    if (err) {
+      window.alert(err);
+      return;
+    }
+    const exportRows = (data ?? []).map((p) => [
+      p.full_name ?? '—',
+      p.username ?? '—',
+      p.employee_code ?? '—',
+      p.role ?? '—',
+      p.is_active === true ? 'Да' : p.is_active === false ? 'Нет' : '—',
+      formatDateTime(p.created_at as string | undefined),
+    ]);
+    exportToExcel(
+      [
+        {
+          name: 'Обходчики',
+          headers: ['ФИО', 'Логин', 'Код сотрудника', 'Роль', 'Активен', 'Дата создания'],
+          rows: exportRows,
+        },
+      ],
+      `workers_${formatDateForFilename()}.xlsx`,
+    );
   };
 
   const handleCreate = async () => {
@@ -120,7 +154,7 @@ export function WorkersPage() {
         создать задание с выбранным исполнителем.
       </Typography>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap">
         <Button
           variant="contained"
           startIcon={<AddRoundedIcon />}
@@ -128,6 +162,15 @@ export function WorkersPage() {
           disabled={!configured || !apiReady}
         >
           Создать обходчика
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<Download size={16} style={{ marginRight: 6 }} />}
+          onClick={() => void handleExportExcel()}
+          disabled={!configured}
+          sx={exportOutlineButtonSx}
+        >
+          ⬇ Экспорт Excel
         </Button>
       </Stack>
 

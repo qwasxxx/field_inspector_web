@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Paper,
   Table,
@@ -11,25 +12,94 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { Download } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useInspectionReports } from '@/features/factory/hooks/useInspectionReports';
 import { defectPriorityRu } from '@/pages/ReportsPage/reportDisplay';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
+import {
+  exportOutlineButtonSx,
+  exportToExcel,
+  formatDateForFilename,
+} from '@/utils/exportUtils';
 
 export function ReportsListPage() {
   const { rows, loading, error } = useInspectionReports();
   const configured = isSupabaseConfigured();
 
+  const handleExportExcel = () => {
+    const exportRows = rows.map((r) => {
+      const defectCol = r.defect_found ? 'Да' : 'Нет';
+      const importance =
+        r.defect_found === true
+          ? defectPriorityRu(r.defect_priority as string | null)
+          : '—';
+      return [
+        formatDateTime(r.created_at as string | undefined),
+        r.task_title ?? '—',
+        r.equipment_name ?? '—',
+        r.equipment_code ?? '—',
+        defectCol,
+        importance,
+        r.defect_description ? String(r.defect_description) : '—',
+        r.photo_count ?? 0,
+        r.audio_count ?? 0,
+      ];
+    });
+    exportToExcel(
+      [
+        {
+          name: 'Отчёты',
+          headers: [
+            'Дата',
+            'Задание',
+            'Оборудование',
+            'Код',
+            'Дефект',
+            'Важность',
+            'Описание',
+            'Фото',
+            'Аудио',
+          ],
+          rows: exportRows,
+        },
+      ],
+      `reports_${formatDateForFilename()}.xlsx`,
+    );
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
-      <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
-        Отчёты
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Здесь отображаются отчёты, которые обходчики отправляют из мобильного приложения после
-        выполнения задания: результаты проверок, показания, комментарии и отметки о дефектах.
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Box>
+          <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
+            Отчёты
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Здесь отображаются отчёты, которые обходчики отправляют из мобильного приложения после
+            выполнения задания: результаты проверок, показания, комментарии и отметки о дефектах.
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          startIcon={<Download size={16} style={{ marginRight: 6 }} />}
+          onClick={handleExportExcel}
+          disabled={loading}
+          sx={exportOutlineButtonSx}
+        >
+          ⬇ Экспорт Excel
+        </Button>
+      </Box>
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
