@@ -1,3 +1,4 @@
+import type { PostgrestError } from '@supabase/supabase-js';
 import type {
   InspectionTaskAssignmentRow,
   InspectionTaskItemRow,
@@ -12,6 +13,58 @@ export type TaskWithExtras = InspectionTaskRow & {
   assigned_worker?: ProfileRow | null;
 };
 
+function logPostgrest(context: string, err: PostgrestError) {
+  console.error(`[inspectionTasksApi] ${context}`, {
+    message: err.message,
+    code: err.code,
+    details: err.details,
+    hint: err.hint,
+  });
+}
+
+/** Сообщение для админки (RU), с деталями PostgREST / RLS. */
+function ruPostgrestMessage(
+  stage: 'tasks' | 'items' | 'assignment' | 'list' | 'detail',
+  err: PostgrestError,
+): string {
+  logPostgrest(stage, err);
+  const parts = [err.message, err.details, err.hint].filter(Boolean);
+  const tech = parts.join(' · ');
+  const rls =
+    err.code === '42501' ||
+    /permission denied|row-level security|new row violates row-level security/i.test(
+      err.message,
+    );
+  const stageRu =
+    stage === 'tasks'
+      ? 'Запись задания (inspection_tasks)'
+      : stage === 'items'
+        ? 'Позиции маршрута (inspection_task_items)'
+        : stage === 'assignment'
+          ? 'Назначение (inspection_task_assignments)'
+          : stage === 'list'
+            ? 'Загрузка списка заданий'
+            : 'Загрузка задания';
+  const rlsRu = rls
+    ? 'Отклонено политикой безопасности (RLS) или недостаточно прав. '
+    : '';
+  return `${stageRu}: ${rlsRu}${tech}`.trim();
+}
+
+function assignmentWorkerId(a: InspectionTaskAssignmentRow | null): string | null {
+  if (!a) return null;
+  const id = a.worker_user_id ?? a.worker_id ?? a.profile_id;
+  return id ? String(id) : null;
+}
+
+async function deleteTaskForRollback(supabase: ReturnType<typeof getSupabaseClient>, taskId: string) {
+  const { error } = await supabase.from('inspection_tasks').delete().eq('id', taskId);
+  if (error) {
+    logPostgrest('rollback_delete_task', error);
+    console.error('[inspectionTasksApi.create] Не удалось откатить задание после ошибки:', taskId);
+  }
+}
+
 export async function fetchInspectionTasks(): Promise<SupabaseResult<TaskWithExtras[]>> {
   if (!isSupabaseConfigured()) {
     return { data: [], error: null };
@@ -21,7 +74,7 @@ export async function fetchInspectionTasks(): Promise<SupabaseResult<TaskWithExt
     const { data, error } = await supabase.from('inspection_tasks').select('*').limit(500);
 
     if (error) {
-      return { data: [], error: error.message };
+      return { data: [], error: ruPostgrestMessage('list', error) };
     }
     const rows = (data ?? []) as InspectionTaskRow[];
     const enriched: TaskWithExtras[] = [];
@@ -37,7 +90,7 @@ export async function fetchInspectionTasks(): Promise<SupabaseResult<TaskWithExt
         const { count } = await supabase
           .from('inspection_task_items')
           .select('*', { count: 'exact', head: true })
-          .eq('inspection_task_id', r.id);
+          .eq('task_id', r.id);
         if (typeof count === 'number') items_count = count;
       } catch {
         /* таблица может отсутствовать */
@@ -45,11 +98,11 @@ export async function fetchInspectionTasks(): Promise<SupabaseResult<TaskWithExt
       try {
         const { data: assignment } = await supabase
           .from('inspection_task_assignments')
-          .select('worker_id, profile_id')
-          .eq('inspection_task_id', r.id)
+          .select('worker_user_id, worker_id, profile_id, task_id')
+          .eq('task_id', r.id)
           .maybeSingle();
         const a = assignment as InspectionTaskAssignmentRow | null;
-        const pid = a?.worker_id ?? a?.profile_id;
+        const pid = assignmentWorkerId(a);
         if (pid) {
           const { data: prof } = await supabase.from('profiles').select('*').eq('id', pid).maybeSingle();
           if (prof) assigned_worker = prof as ProfileRow;
@@ -96,25 +149,54 @@ export async function fetchTaskDetail(id: string): Promise<SupabaseResult<TaskDe
       .maybeSingle();
 
     if (taskErr) {
-      return { data: empty, error: taskErr.message };
+      return { data: empty, error: ruPostgrestMessage('detail', taskErr) };
     }
     if (!taskRow) {
       return { data: empty, error: 'Задание не найдено' };
     }
 
-    const { data: items } = await supabase
+    const itemsRes = await supabase
       .from('inspection_task_items')
       .select('*')
-      .eq('inspection_task_id', id);
+      .eq('task_id', id)
+      .order('sort_order', { ascending: true });
 
-    const { data: assignment } = await supabase
+    let itemRows = (itemsRes.data ?? []) as InspectionTaskItemRow[];
+    let itemsErrorMsg = itemsRes.error ? ruPostgrestMessage('detail', itemsRes.error) : null;
+
+    if (!itemsRes.error && itemRows.length === 0) {
+      const legacy = await supabase
+        .from('inspection_task_items')
+        .select('*')
+        .eq('inspection_task_id', id)
+        .order('sort_order', { ascending: true });
+      if (legacy.error) {
+        if (import.meta.env.DEV) {
+          console.debug(
+            '[inspectionTasksApi.detail] no rows via task_id; legacy inspection_task_id query:',
+            legacy.error.message,
+          );
+        }
+      } else if ((legacy.data?.length ?? 0) > 0) {
+        itemRows = (legacy.data ?? []) as InspectionTaskItemRow[];
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[inspectionTasksApi.detail] loaded inspection_task_items via legacy column inspection_task_id',
+          );
+        }
+      }
+    }
+
+    const { data: assignment, error: asgErr } = await supabase
       .from('inspection_task_assignments')
       .select('*')
-      .eq('inspection_task_id', id)
+      .eq('task_id', id)
       .maybeSingle();
 
-    const a = assignment as InspectionTaskAssignmentRow | null;
-    const pid = a?.worker_id ?? a?.profile_id;
+    const asgErrorMsg = asgErr ? ruPostgrestMessage('detail', asgErr) : null;
+
+    const a = asgErr ? null : (assignment as InspectionTaskAssignmentRow | null);
+    const pid = assignmentWorkerId(a);
     let worker: ProfileRow | null = null;
     if (pid) {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', pid).maybeSingle();
@@ -124,11 +206,11 @@ export async function fetchTaskDetail(id: string): Promise<SupabaseResult<TaskDe
     return {
       data: {
         task: taskRow as InspectionTaskRow,
-        items: (items ?? []) as InspectionTaskItemRow[],
+        items: itemRows,
         assignment: a,
         worker,
       },
-      error: null,
+      error: itemsErrorMsg ?? asgErrorMsg,
     };
   } catch (e) {
     console.error('[inspectionTasksApi.detail]', e);
@@ -160,19 +242,64 @@ export async function createInspectionTask(
   items: CreateTaskItemPayload[],
 ): Promise<SupabaseResult<{ taskId: string | null }>> {
   if (!isSupabaseConfigured()) {
-    console.warn('[inspectionTasksApi.create] Supabase не настроен, payload:', payload, items);
-    return { data: { taskId: null }, error: null };
+    console.warn('[inspectionTasksApi.create] Нет VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY');
+    return {
+      data: { taskId: null },
+      error:
+        'Окружение: не заданы VITE_SUPABASE_URL и VITE_SUPABASE_PUBLISHABLE_KEY в frontend/.env.local — сохранение отключено.',
+    };
   }
+
+  const workerUserId = payload.worker_id?.trim() || null;
+  if (!workerUserId) {
+    return {
+      data: { taskId: null },
+      error: 'Выберите исполнителя (worker_user_id обязателен для назначения).',
+    };
+  }
+
+  if (items.length < 1) {
+    console.warn('[inspectionTasksApi.create] нет позиций маршрута (inspection_task_items)');
+    return {
+      data: { taskId: null },
+      error:
+        'Добавьте хотя бы одну позицию оборудования с названием — без маршрута задание не сохраняется в общую базу.',
+    };
+  }
+
   try {
     const supabase = getSupabaseClient();
+    const {
+      data: { session },
+      error: sessionErr,
+    } = await supabase.auth.getSession();
+
+    if (sessionErr) {
+      console.error('[inspectionTasksApi.create] session', sessionErr);
+      return {
+        data: { taskId: null },
+        error: `Сессия Supabase: ${sessionErr.message}`,
+      };
+    }
+    const adminUserId = session?.user?.id;
+    if (!adminUserId) {
+      console.error('[inspectionTasksApi.create] Нет активной сессии (auth.getSession)');
+      return {
+        data: { taskId: null },
+        error:
+          'Нет сессии входа Supabase: войдите в панель под учётной записью администратора, затем повторите сохранение.',
+      };
+    }
+
     const insertRow: Record<string, unknown> = {
       title: payload.title,
-      site_name: payload.site_name,
-      area_name: payload.area_name,
-      shift_label: payload.shift_label,
-      instructions: payload.instructions,
+      site_name: payload.site_name || null,
+      area_name: payload.area_name || null,
+      shift_label: payload.shift_label || null,
+      instructions: payload.instructions || null,
       due_at: payload.due_at,
-      status: 'draft',
+      status: 'assigned',
+      created_by: adminUserId,
     };
 
     const { data: created, error: insErr } = await supabase
@@ -182,40 +309,66 @@ export async function createInspectionTask(
       .single();
 
     if (insErr) {
-      return { data: { taskId: null }, error: insErr.message };
+      return { data: { taskId: null }, error: ruPostgrestMessage('tasks', insErr) };
     }
     const taskId = (created as { id?: string })?.id ?? null;
     if (!taskId) {
-      return { data: { taskId: null }, error: 'Не удалось получить id задания' };
+      return { data: { taskId: null }, error: 'Не удалось получить id задания после вставки.' };
     }
 
-    if (items.length > 0) {
-      const rows = items.map((it) => ({
-        inspection_task_id: taskId,
-        equipment_name: it.equipment_name,
-        equipment_location: it.equipment_location,
-        equipment_code: it.equipment_code || null,
-      }));
-      const { error: itemsErr } = await supabase.from('inspection_task_items').insert(rows);
-      if (itemsErr) {
-        console.error('[inspectionTasksApi.create items]', itemsErr);
-      }
-    }
-
-    if (payload.worker_id) {
-      const { error: asgErr } = await supabase.from('inspection_task_assignments').insert({
-        inspection_task_id: taskId,
-        worker_id: payload.worker_id,
-      });
-      if (asgErr) {
-        const alt = await supabase.from('inspection_task_assignments').insert({
-          inspection_task_id: taskId,
-          profile_id: payload.worker_id,
+    const rows = items.map((it, i) => ({
+      task_id: taskId,
+      sort_order: i + 1,
+      equipment_name: it.equipment_name.trim(),
+      equipment_location: it.equipment_location.trim() || null,
+      equipment_code: it.equipment_code.trim() || null,
+    }));
+    const { error: itemsErr } = await supabase.from('inspection_task_items').insert(rows);
+    if (itemsErr) {
+      if (import.meta.env.DEV) {
+        console.error('[inspectionTasksApi.create] inspection_task_items insert failed', {
+          taskId,
+          rowCount: rows.length,
+          sample: rows[0],
         });
-        if (alt.error) {
-          console.error('[inspectionTasksApi.create assignment]', asgErr, alt.error);
-        }
       }
+      await deleteTaskForRollback(supabase, taskId);
+      return { data: { taskId: null }, error: ruPostgrestMessage('items', itemsErr) };
+    }
+    if (import.meta.env.DEV) {
+      console.info('[inspectionTasksApi.create] inspection_task_items OK', {
+        taskId,
+        inserted: rows.length,
+      });
+    }
+
+    const assignedAt = new Date().toISOString();
+    const { error: asgErr } = await supabase.from('inspection_task_assignments').insert({
+      task_id: taskId,
+      worker_user_id: workerUserId,
+      assigned_by: adminUserId,
+      assigned_at: assignedAt,
+      is_active: true,
+      execution_status: 'assigned',
+    });
+
+    if (asgErr) {
+      if (import.meta.env.DEV) {
+        console.error('[inspectionTasksApi.create] inspection_task_assignments insert failed', {
+          taskId,
+          worker_user_id: workerUserId,
+        });
+      }
+      await deleteTaskForRollback(supabase, taskId);
+      return { data: { taskId: null }, error: ruPostgrestMessage('assignment', asgErr) };
+    }
+
+    if (import.meta.env.DEV) {
+      console.info('[inspectionTasksApi.create] done', {
+        taskId,
+        items: rows.length,
+        worker_user_id: workerUserId,
+      });
     }
 
     return { data: { taskId }, error: null };

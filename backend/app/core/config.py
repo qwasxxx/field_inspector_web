@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     seed_admin_email: str = "admin@example.com"
     seed_admin_password: str = "admin"
 
+    # Supabase (server-only): создание auth.users + profiles из админки. Ключ service_role никогда не отдавать клиенту.
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -21,6 +21,7 @@ export type InspectionTaskRow = {
   due_at?: string | null;
   shift_label?: string | null;
   instructions?: string | null;
+  created_by?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
   duration_minutes?: number | null;
@@ -30,7 +31,10 @@ export type InspectionTaskRow = {
 
 export type InspectionTaskItemRow = {
   id?: string;
+  task_id?: string | null;
+  /** @deprecated используйте task_id (совпадает с public.inspection_task_items.task_id) */
   inspection_task_id?: string | null;
+  sort_order?: number | null;
   equipment_name?: string | null;
   equipment_location?: string | null;
   equipment_code?: string | null;
@@ -39,7 +43,15 @@ export type InspectionTaskItemRow = {
 
 export type InspectionTaskAssignmentRow = {
   id?: string;
+  task_id?: string | null;
+  worker_user_id?: string | null;
+  assigned_by?: string | null;
+  assigned_at?: string | null;
+  is_active?: boolean | null;
+  execution_status?: string | null;
+  /** @deprecated используйте task_id */
   inspection_task_id?: string | null;
+  /** @deprecated используйте worker_user_id */
   worker_id?: string | null;
   profile_id?: string | null;
   [key: string]: unknown;

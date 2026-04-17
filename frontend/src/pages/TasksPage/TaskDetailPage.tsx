@@ -21,6 +21,8 @@ export function TaskDetailPage() {
   const { bundle, loading, error } = useTaskDetail(id);
   const configured = isSupabaseConfigured();
   const t = bundle?.task;
+  const routeItems = bundle?.items ?? [];
+  const hasRouteItems = routeItems.length > 0;
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -106,18 +108,26 @@ export function TaskDetailPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(bundle?.items ?? []).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3}>Нет позиций или таблица недоступна.</TableCell>
-                  </TableRow>
-                ) : (
-                  bundle!.items.map((it, idx) => (
+                {hasRouteItems ? (
+                  routeItems.map((it, idx) => (
                     <TableRow key={it.id != null ? String(it.id) : `i-${idx}`}>
                       <TableCell>{it.equipment_name ?? '—'}</TableCell>
                       <TableCell>{it.equipment_location ?? '—'}</TableCell>
                       <TableCell>{it.equipment_code ?? '—'}</TableCell>
                     </TableRow>
                   ))
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      Позиции маршрута не загружены — см. сообщение об ошибке выше.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      В задании нет позиций оборудования (маршрут не был сохранён).
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>

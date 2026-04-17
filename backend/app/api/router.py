@@ -9,6 +9,7 @@ from app.api.routers import (
     equipment,
     planning,
     routes,
+    supabase_workers,
     sync,
 )
 
@@ -20,3 +21,4 @@ api_router.include_router(dashboard.router)
 api_router.include_router(checklist_templates.router)
 api_router.include_router(sync.router)
 api_router.include_router(planning.router)
+api_router.include_router(supabase_workers.router)

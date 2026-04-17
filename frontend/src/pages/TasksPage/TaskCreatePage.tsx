@@ -15,12 +15,22 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { createInspectionTask } from '@/features/factory/services/inspectionTasksApi';
 import type { CreateTaskItemPayload, CreateTaskPayload } from '@/features/factory/services/inspectionTasksApi';
+import type { ProfileRow } from '@/entities/factory/model/types';
 import { useWorkers } from '@/features/factory/hooks/useWorkers';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
+
+function formatWorkerLabel(w: ProfileRow): string {
+  const name = (w.full_name ?? '').trim() || (w.username ?? '').trim();
+  const code = (w.employee_code ?? '').trim();
+  if (name && code) return `${name} · ${code}`;
+  if (name) return name;
+  if (code) return code;
+  return String(w.id ?? '—');
+}
 
 const emptyItem = (): CreateTaskItemPayload => ({
   equipment_name: '',
@@ -30,7 +40,10 @@ const emptyItem = (): CreateTaskItemPayload => ({
 
 export function TaskCreatePage() {
   const navigate = useNavigate();
-  const { rows: workers, loading: workersLoading } = useWorkers();
+  const [searchParams] = useSearchParams();
+  const workerFromUrl = searchParams.get('workerId')?.trim() ?? '';
+
+  const { rows: workers, loading: workersLoading, error: workersFetchError } = useWorkers();
   const configured = isSupabaseConfigured();
 
   const [title, setTitle] = useState('');
@@ -43,6 +56,14 @@ export function TaskCreatePage() {
   const [items, setItems] = useState<CreateTaskItemPayload[]>([emptyItem()]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!workerFromUrl || workersLoading) return;
+    const w = workers.find((x) => x.id === workerFromUrl);
+    if (w && w.is_active === true) {
+      setWorkerId(workerFromUrl);
+    }
+  }, [workerFromUrl, workers, workersLoading]);
 
   const addItem = () => setItems((prev) => [...prev, emptyItem()]);
   const removeItem = (index: number) =>
@@ -68,12 +89,28 @@ export function TaskCreatePage() {
       setFormError('Укажите название');
       return;
     }
-    const cleanItems = items.filter(
+    if (configured && !payload.worker_id) {
+      setFormError('Выберите исполнителя.');
+      return;
+    }
+    const partialItem = items.some(
       (it) =>
-        it.equipment_name.trim() ||
-        it.equipment_location.trim() ||
-        it.equipment_code.trim(),
+        !it.equipment_name.trim() &&
+        (it.equipment_location.trim() || it.equipment_code.trim()),
     );
+    if (partialItem) {
+      setFormError(
+        'Для каждой позиции с указанным местом или кодом заполните название оборудования.',
+      );
+      return;
+    }
+    const cleanItems = items.filter((it) => it.equipment_name.trim());
+    if (cleanItems.length < 1) {
+      setFormError(
+        'Укажите хотя бы одно оборудование с названием — маршрут обязателен для мобильного приложения.',
+      );
+      return;
+    }
     setSaving(true);
     try {
       const { data, error } = await createInspectionTask(payload, cleanItems);
@@ -83,12 +120,8 @@ export function TaskCreatePage() {
       }
       if (data.taskId) {
         navigate(`/tasks/${data.taskId}`, { replace: true });
-      } else {
-        setFormError(
-          configured
-            ? 'Запись не создана (проверьте таблицы на бэкенде).'
-            : 'Режим без Supabase — данные только в консоли.',
-        );
+      } else if (!error) {
+        setFormError('Запись не создана: нет идентификатора задания (см. консоль разработчика).');
       }
     } finally {
       setSaving(false);
@@ -106,7 +139,13 @@ export function TaskCreatePage() {
 
       {!configured ? (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Без переменных Supabase отправка не сохранится в БД (см. консоль).
+          Без переменных <code>VITE_SUPABASE_URL</code> и <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> в{' '}
+          <code>frontend/.env.local</code> сохранение в общую базу отключено.
+        </Alert>
+      ) : null}
+      {configured && workersFetchError ? (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Не удалось загрузить исполнителей (profiles): {workersFetchError}
         </Alert>
       ) : null}
       {formError ? (
@@ -171,7 +210,7 @@ export function TaskCreatePage() {
             </MenuItem>
             {workers.map((w) => (
               <MenuItem key={String(w.id)} value={w.id ?? ''}>
-                {w.full_name ?? w.username ?? w.id ?? '—'}
+                {formatWorkerLabel(w)}
               </MenuItem>
             ))}
           </Select>
@@ -179,6 +218,9 @@ export function TaskCreatePage() {
 
         <Divider />
         <Typography variant="subtitle1">Позиции оборудования</Typography>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -1 }}>
+          Минимум одна позиция с названием обязательна для сохранения маршрута.
+        </Typography>
         {items.map((it, index) => (
           <Paper key={index} variant="outlined" sx={{ p: 2 }}>
             <Stack spacing={1.5}>
@@ -186,6 +228,7 @@ export function TaskCreatePage() {
                 label="Оборудование"
                 value={it.equipment_name}
                 onChange={(e) => patchItem(index, { equipment_name: e.target.value })}
+                required={index === 0}
                 fullWidth
                 size="small"
               />
@@ -228,7 +271,11 @@ export function TaskCreatePage() {
         </Button>
 
         <Stack direction="row" spacing={2} sx={{ pt: 1 }}>
-          <Button type="submit" variant="contained" disabled={saving}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving || !configured || workersLoading || !workerId}
+          >
             {saving ? <CircularProgress size={22} color="inherit" /> : 'Сохранить'}
           </Button>
           <Button component={RouterLink} to="/tasks" disabled={saving}>

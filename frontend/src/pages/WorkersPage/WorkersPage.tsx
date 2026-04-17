@@ -1,22 +1,114 @@
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
   Paper,
+  Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWorkers } from '@/features/factory/hooks/useWorkers';
+import { createWorkerAccount } from '@/features/factory/services/workersAdminApi';
+import { API_BASE } from '@/shared/api/client';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
 
 export function WorkersPage() {
-  const { rows, loading, error } = useWorkers();
+  const navigate = useNavigate();
+  const { rows, loading, error, reload } = useWorkers({ onlyActive: false });
   const configured = isSupabaseConfigured();
+  const apiReady =
+    configured && (Boolean(API_BASE) || Boolean(import.meta.env.DEV));
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [employeeCode, setEmployeeCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const openDialog = () => {
+    setFormError(null);
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    if (saving) return;
+    setDialogOpen(false);
+    setFormError(null);
+  };
+
+  const resetForm = () => {
+    setFullName('');
+    setUsername('');
+    setEmployeeCode('');
+    setEmail('');
+    setPassword('');
+    setIsActive(true);
+  };
+
+  const handleCreate = async () => {
+    setFormError(null);
+    if (!fullName.trim()) {
+      setFormError('Укажите ФИО.');
+      return;
+    }
+    if (!username.trim()) {
+      setFormError('Укажите логин.');
+      return;
+    }
+    if (!employeeCode.trim()) {
+      setFormError('Укажите код сотрудника.');
+      return;
+    }
+    if (!email.trim()) {
+      setFormError('Укажите email.');
+      return;
+    }
+    if (password.length < 6) {
+      setFormError('Пароль не короче 6 символов.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error: err } = await createWorkerAccount({
+        full_name: fullName.trim(),
+        username: username.trim(),
+        employee_code: employeeCode.trim(),
+        email: email.trim(),
+        password,
+        is_active: isActive,
+      });
+      if (err) {
+        setFormError(err);
+        return;
+      }
+      resetForm();
+      setDialogOpen(false);
+      await reload();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -24,13 +116,30 @@ export function WorkersPage() {
         Обходчики
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Список профилей с ролью <code>worker</code> (только просмотр). Таблица:{' '}
-        <code>profiles</code>.
+        Список профилей с ролью <code>worker</code>. Таблица: <code>profiles</code>. Строка: клик —
+        создать задание с выбранным исполнителем.
       </Typography>
+
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+        <Button
+          variant="contained"
+          startIcon={<AddRoundedIcon />}
+          onClick={openDialog}
+          disabled={!configured || !apiReady}
+        >
+          Создать обходчика
+        </Button>
+      </Stack>
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
           Supabase не настроен — данные не загрузятся.
+        </Alert>
+      ) : null}
+      {configured && !import.meta.env.DEV && !API_BASE ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Для создания обходчиков в production задайте <code>VITE_API_BASE_URL</code> на URL API и
+          держите <code>SUPABASE_SERVICE_ROLE_KEY</code> только в <code>backend/.env</code>.
         </Alert>
       ) : null}
       {error ? (
@@ -62,12 +171,23 @@ export function WorkersPage() {
                 </TableRow>
               ) : (
                 rows.map((r, idx) => (
-                  <TableRow key={r.id != null ? String(r.id) : `w-${idx}`}>
+                  <TableRow
+                    key={r.id != null ? String(r.id) : `w-${idx}`}
+                    hover
+                    sx={{ cursor: r.id ? 'pointer' : 'default' }}
+                    onClick={() => {
+                      if (r.id) {
+                        navigate(`/tasks/create?workerId=${encodeURIComponent(String(r.id))}`);
+                      }
+                    }}
+                  >
                     <TableCell>{r.full_name ?? '—'}</TableCell>
                     <TableCell>{r.username ?? '—'}</TableCell>
                     <TableCell>{r.employee_code ?? '—'}</TableCell>
                     <TableCell>{r.role ?? '—'}</TableCell>
-                    <TableCell>{r.is_active === true ? 'Да' : r.is_active === false ? 'Нет' : '—'}</TableCell>
+                    <TableCell>
+                      {r.is_active === true ? 'Да' : r.is_active === false ? 'Нет' : '—'}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -75,6 +195,79 @@ export function WorkersPage() {
           </Table>
         </TableContainer>
       )}
+
+      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Новый обходчик</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {formError ? (
+              <Alert severity="error" onClose={() => setFormError(null)}>
+                {formError}
+              </Alert>
+            ) : null}
+            <TextField
+              label="ФИО"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              fullWidth
+              autoComplete="name"
+            />
+            <TextField
+              label="Логин (username)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              fullWidth
+              autoComplete="username"
+            />
+            <TextField
+              label="Код сотрудника"
+              value={employeeCode}
+              onChange={(e) => setEmployeeCode(e.target.value)}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+              autoComplete="email"
+            />
+            <TextField
+              label="Пароль"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              autoComplete="new-password"
+              helperText="Минимум 6 символов (требование Supabase Auth)."
+            />
+            <FormControlLabel
+              control={
+                <Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+              }
+              label="Активен"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDialog} disabled={saving}>
+            Отмена
+          </Button>
+          <Button
+            onClick={() => void handleCreate()}
+            variant="contained"
+            disabled={saving || !configured || !apiReady}
+          >
+            {saving ? <CircularProgress size={22} color="inherit" /> : 'Создать'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
