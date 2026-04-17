@@ -1,8 +1,6 @@
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import {
   Alert,
   Box,
-  Button,
   CircularProgress,
   Link,
   Paper,
@@ -25,30 +23,15 @@ export function TasksListPage() {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-          mb: 2,
-        }}
-      >
-        <Typography variant="h4" component="h1">
-          Задания на обход
-        </Typography>
-        <Button
-          component={RouterLink}
-          to="/tasks/create"
-          variant="contained"
-          startIcon={<AddRoundedIcon />}
-        >
-          Создать задание
-        </Button>
-      </Box>
+      <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+        Задания на обход
+      </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Таблица: <code>inspection_tasks</code>. Связи подгружаются при наличии таблиц.
+        Новое задание создаётся в разделе{' '}
+        <Link component={RouterLink} to="/objects">
+          Объекты
+        </Link>
+        : выберите оборудование, затем «Назначить обход».
       </Typography>
 
       {!configured ? (

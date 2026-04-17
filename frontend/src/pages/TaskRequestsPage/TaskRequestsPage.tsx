@@ -28,8 +28,8 @@ export function TaskRequestsPage() {
         Заявки на задания
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Таблица: <code>task_requests</code> (если есть на бэкенде). Одобрение / отклонение без
-        падения UI при отсутствии API.
+        Таблица: <code>inspection_task_requests</code>. Одобрение / отклонение без падения UI при
+        отсутствии API.
       </Typography>
 
       {!configured ? (
@@ -67,7 +67,7 @@ export function TaskRequestsPage() {
                 <TableRow>
                   <TableCell colSpan={10}>
                     {configured
-                      ? 'Нет заявок или таблица task_requests недоступна.'
+                      ? 'Нет заявок или таблица inspection_task_requests недоступна.'
                       : '—'}
                   </TableCell>
                 </TableRow>

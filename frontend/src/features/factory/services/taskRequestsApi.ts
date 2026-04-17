@@ -12,7 +12,7 @@ export async function fetchTaskRequests(): Promise<SupabaseResult<TaskRequestWit
   try {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
-      .from('task_requests')
+      .from('inspection_task_requests')
       .select('*')
       .order('requested_at', { ascending: false, nullsFirst: false });
 
@@ -47,9 +47,14 @@ export async function approveTaskRequest(id: string): Promise<SupabaseResult<boo
   }
   try {
     const supabase = getSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const reviewedAt = new Date().toISOString();
+    const reviewedBy = session?.user?.id ?? null;
     const { error } = await supabase
-      .from('task_requests')
-      .update({ status: 'approved' })
+      .from('inspection_task_requests')
+      .update({ status: 'approved', reviewed_at: reviewedAt, reviewed_by: reviewedBy })
       .eq('id', id);
     if (!error) {
       return { data: true, error: null };
@@ -79,9 +84,14 @@ export async function rejectTaskRequest(id: string): Promise<SupabaseResult<bool
   }
   try {
     const supabase = getSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const reviewedAt = new Date().toISOString();
+    const reviewedBy = session?.user?.id ?? null;
     const { error } = await supabase
-      .from('task_requests')
-      .update({ status: 'rejected' })
+      .from('inspection_task_requests')
+      .update({ status: 'rejected', reviewed_at: reviewedAt, reviewed_by: reviewedBy })
       .eq('id', id);
     if (error) {
       console.log('[taskRequestsApi.reject] update fallback', payload, error.message);

@@ -1,17 +1,25 @@
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
 import { Box, Button, Stack, Typography } from '@mui/material';
-import { useCallback, useState } from 'react';
-import { AssignTaskModal, type AssignTaskPayload } from '@/features/objects/AssignTaskModal';
+import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CreatePatrolFromObjectsModal } from '@/features/objects/CreatePatrolFromObjectsModal';
 import { EquipmentDetailsModal } from '@/features/objects/EquipmentDetailsModal';
+import { collectEquipmentNodesByIds } from '@/features/objects/objectTreeUtils';
 import { ObjectTree } from '@/features/objects/ObjectTree';
 import type { ObjectNode } from '@/features/objects/types';
 import { useObjectTree } from '@/features/objects/useObjectTree';
 
 export function ObjectsPage() {
+  const navigate = useNavigate();
   const { tree, loading, error } = useObjectTree();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [detailsNode, setDetailsNode] = useState<ObjectNode | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
+
+  const selectedNodes = useMemo(
+    () => collectEquipmentNodesByIds(tree, selectedIds),
+    [tree, selectedIds],
+  );
 
   const onToggleSelect = useCallback((id: string, selected: boolean) => {
     setSelectedIds((prev) => {
@@ -22,9 +30,13 @@ export function ObjectsPage() {
     });
   }, []);
 
-  const handleAssignConfirm = useCallback((payload: AssignTaskPayload) => {
-    console.log('[ObjectsPage] assign inspection (demo)', payload);
-  }, []);
+  const handleCreated = useCallback(
+    (taskId: string) => {
+      setSelectedIds(new Set());
+      navigate(`/tasks/${taskId}`);
+    },
+    [navigate],
+  );
 
   return (
     <Box sx={{ width: '100%', maxWidth: 960 }}>
@@ -32,7 +44,8 @@ export function ObjectsPage() {
         Объекты
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Иерархия из таблицы <code>equipment_nodes</code>. Схема на canvas — в разделе «Схема объектов».
+        Выберите оборудование и назначьте обход: создаётся задание с маршрутом для мобильного приложения.
+        Список всех заданий — в разделе «Задания».
       </Typography>
 
       <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
@@ -66,11 +79,11 @@ export function ObjectsPage() {
         onClose={() => setDetailsNode(null)}
       />
 
-      <AssignTaskModal
+      <CreatePatrolFromObjectsModal
         open={assignOpen}
-        equipmentIds={[...selectedIds]}
+        selectedNodes={selectedNodes}
         onClose={() => setAssignOpen(false)}
-        onConfirm={handleAssignConfirm}
+        onCreated={handleCreated}
       />
     </Box>
   );
