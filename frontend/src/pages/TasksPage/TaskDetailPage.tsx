@@ -1,8 +1,11 @@
 import {
   Alert,
   Box,
+  Button,
+  Chip,
   CircularProgress,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -11,8 +14,11 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
+import type { EquipmentRedAlertRow } from '@/entities/factory/model/types';
 import { useTaskDetail } from '@/features/factory/hooks/useTaskDetail';
+import { fetchRedAlertsForTask } from '@/features/factory/services/equipmentRedAlertsApi';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
 
@@ -20,6 +26,30 @@ export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { bundle, loading, error } = useTaskDetail(id);
   const configured = isSupabaseConfigured();
+  const [taskRedAlerts, setTaskRedAlerts] = useState<EquipmentRedAlertRow[]>([]);
+  const [taskRedAlertsError, setTaskRedAlertsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!configured || !id?.trim()) {
+      setTaskRedAlerts([]);
+      setTaskRedAlertsError(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchRedAlertsForTask(id).then(({ data, error: e }) => {
+      if (cancelled) return;
+      if (e) {
+        setTaskRedAlertsError(e);
+        setTaskRedAlerts([]);
+      } else {
+        setTaskRedAlertsError(null);
+        setTaskRedAlerts(data);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [configured, id]);
   const t = bundle?.task;
   const routeItems = bundle?.items ?? [];
   const hasRouteItems = routeItems.length > 0;
@@ -29,8 +59,13 @@ export function TaskDetailPage() {
       <Typography variant="h4" component="h1" gutterBottom>
         Задание
       </Typography>
-      <Typography variant="body2" sx={{ mb: 2 }}>
+      <Typography variant="body2" sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
         <RouterLink to="/tasks">← К списку заданий</RouterLink>
+        {configured && id ? (
+          <Button component={RouterLink} to={`/chats?task=${encodeURIComponent(id)}`} variant="outlined" size="small">
+            Открыть чат
+          </Button>
+        ) : null}
       </Typography>
 
       {!configured ? (
@@ -94,6 +129,38 @@ export function TaskDetailPage() {
             </Typography>
             <Typography variant="body1">{t.execution_status ?? '—'}</Typography>
           </Paper>
+
+          {taskRedAlertsError ? (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Красные тревоги по заданию: {taskRedAlertsError}
+            </Alert>
+          ) : null}
+          {taskRedAlerts.length > 0 ? (
+            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderColor: 'error.light' }}>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom color="error">
+                Открытые красные тревоги по этому заданию
+              </Typography>
+              <Stack spacing={1} sx={{ mb: 1 }}>
+                {taskRedAlerts.map((r) => (
+                  <Box
+                    key={r.id != null ? String(r.id) : String(r.created_at)}
+                    sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}
+                  >
+                    <Chip size="small" color="error" label={r.severity ?? '—'} variant="outlined" />
+                    <Typography variant="body2">
+                      {r.equipment_name ?? r.equipment_id ?? '—'} — {r.title ?? ''}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDateTime(r.created_at as string | undefined)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+              <Button component={RouterLink} to="/red-alerts" size="small" variant="outlined" color="error">
+                Центр тревог
+              </Button>
+            </Paper>
+          ) : null}
 
           <Typography variant="h6" gutterBottom>
             Позиции оборудования

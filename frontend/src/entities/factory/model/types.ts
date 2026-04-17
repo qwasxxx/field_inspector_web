@@ -74,3 +74,73 @@ export type SupabaseResult<T> = {
   data: T;
   error: string | null;
 };
+
+export type TaskChatThreadRow = {
+  id?: string;
+  task_id?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+  last_message_at?: string | null;
+  last_message_preview?: string | null;
+  [key: string]: unknown;
+};
+
+export type TaskChatMessageRow = {
+  id?: string;
+  thread_id?: string | null;
+  task_id?: string | null;
+  sender_user_id?: string | null;
+  sender_role?: string | null;
+  /** Текст сообщения в актуальной схеме Supabase (как у мобильного клиента). */
+  content?: string | null;
+  /** Устаревшее имя в старых миграциях; чтение поддерживается через getTaskChatMessageText. */
+  body?: string | null;
+  body_text?: string | null;
+  message_type?: string | null;
+  created_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type TaskChatAttachmentRow = {
+  id?: string;
+  message_id?: string | null;
+  storage_path?: string | null;
+  storage_bucket?: string | null;
+  /** Если мобильное клиент заполняет другой ключ пути — поддерживается в getAttachmentStoragePath */
+  file_path?: string | null;
+  file_name?: string | null;
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  created_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type TaskChatReadRow = {
+  thread_id?: string;
+  user_id?: string;
+  last_read_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type EquipmentRedAlertRow = {
+  id?: string;
+  equipment_id?: string | null;
+  equipment_name?: string | null;
+  site_name?: string | null;
+  area_name?: string | null;
+  task_id?: string | null;
+  triggered_by?: string | null;
+  triggered_by_name?: string | null;
+  source?: string | null;
+  severity?: string | null;
+  title?: string | null;
+  description?: string | null;
+  status?: string | null;
+  acknowledged_by?: string | null;
+  acknowledged_at?: string | null;
+  resolved_by?: string | null;
+  resolved_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  [key: string]: unknown;
+};

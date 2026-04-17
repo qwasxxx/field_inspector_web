@@ -45,10 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const client = getSupabaseClient();
 
-    void client.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      setSupabaseAuthed(Boolean(data.session));
-      setAuthReady(true);
-    });
+    void client.auth
+      .getSession()
+      .then(({ data }: { data: { session: Session | null } }) => {
+        setSupabaseAuthed(Boolean(data.session));
+        setAuthReady(true);
+      })
+      .catch((err: unknown) => {
+        console.error('[AuthProvider] Supabase getSession failed', err);
+        setSupabaseAuthed(false);
+        setAuthReady(true);
+      });
 
     const { data: sub } = client.auth.onAuthStateChange(
       (_event: AuthChangeEvent, session: Session | null) => {

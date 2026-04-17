@@ -25,6 +25,8 @@ const navItems: NavItem[] = [
   { label: 'Схема объектов', path: '/topology' },
   { label: 'Задания', path: '/tasks' },
   { label: 'Входящие запросы', path: '/task-requests' },
+  { label: 'Чаты', path: '/chats' },
+  { label: 'Красные тревоги', path: '/red-alerts' },
   { label: 'Планирование обходов', path: '/planning' },
   { label: 'Чек-листы', path: '/checklist-builder' },
   { label: 'Дефекты', path: '/defects' },

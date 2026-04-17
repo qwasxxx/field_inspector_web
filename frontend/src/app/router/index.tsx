@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/Dashboard/DashboardPage';
 import { PlanningPage } from '@/pages/PlanningPage/PlanningPage';
 import { LoginPage } from '@/pages/Login/LoginPage';
 import { RouteExecutionPage } from '@/pages/RouteExecution/RouteExecutionPage';
+import { TaskChatsPage } from '@/pages/TaskChatsPage/TaskChatsPage';
 import { TaskRequestsPage } from '@/pages/TaskRequestsPage/TaskRequestsPage';
 import { TaskCreatePage } from '@/pages/TasksPage/TaskCreatePage';
 import { TaskDetailPage } from '@/pages/TasksPage/TaskDetailPage';
@@ -15,6 +16,7 @@ import { WorkersPage } from '@/pages/WorkersPage/WorkersPage';
 import { TopologyPage } from '@/pages/TopologyPage/TopologyPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage/AnalyticsPage';
 import { DefectsPage } from '@/pages/DefectsPage/DefectsPage';
+import { RedAlertsPage } from '@/pages/RedAlertsPage/RedAlertsPage';
 import { ReportDetailPage } from '@/pages/ReportsPage/ReportDetailPage';
 import { ReportsListPage } from '@/pages/ReportsPage/ReportsListPage';
 import { MainLayout } from '@/widgets/MainLayout/MainLayout';
@@ -46,8 +48,10 @@ export function AppRouter() {
         <Route path="tasks/:id" element={<TaskDetailPage />} />
         <Route path="tasks" element={<TasksListPage />} />
         <Route path="task-requests" element={<TaskRequestsPage />} />
+        <Route path="chats" element={<TaskChatsPage />} />
         <Route path="planning" element={<PlanningPage />} />
         <Route path="checklist-builder" element={<ChecklistBuilderPage />} />
+        <Route path="red-alerts" element={<RedAlertsPage />} />
         <Route path="defects" element={<DefectsPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="reports/:id" element={<ReportDetailPage />} />

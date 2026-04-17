@@ -1,9 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import '@/shared/styles/variables.scss';
+import { ErrorBoundary } from '@/app/ErrorBoundary';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { AppRouter } from '@/app/router';
+import '@/shared/styles/variables.scss';
 
 const rootEl = document.getElementById('root');
 if (!rootEl) {
@@ -12,10 +13,12 @@ if (!rootEl) {
 
 createRoot(rootEl).render(
   <StrictMode>
-    <AppProviders>
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
-    </AppProviders>
+    <ErrorBoundary>
+      <AppProviders>
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </AppProviders>
+    </ErrorBoundary>
   </StrictMode>,
 );

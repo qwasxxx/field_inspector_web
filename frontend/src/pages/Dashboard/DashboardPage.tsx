@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Download } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
   CriticalDefectAlert,
@@ -23,6 +23,10 @@ import {
   emptyDashboardBundle,
   fetchDashboardBundle,
 } from '@/features/factory/services/dashboardAdminApi';
+import {
+  fetchOpenCriticalRedAlertsCount,
+  subscribeEquipmentRedAlertsRealtime,
+} from '@/features/factory/services/equipmentRedAlertsApi';
 import { isSupabaseConfigured } from '@/shared/lib/supabase/client';
 import {
   exportIconButtonSx,
@@ -32,6 +36,7 @@ import {
 } from '@/utils/exportUtils';
 import { formatDateRu, getCurrentShift, isCurrentShift, type ShiftInfo } from '@/utils/shiftUtils';
 import { DashboardCriticalAlert } from './components/DashboardCriticalAlert';
+import { DashboardRedAlertsStrip } from './components/DashboardRedAlertsStrip';
 import { DashboardEmployeesColumn } from './components/DashboardEmployeesColumn';
 import { DashboardMetricCards } from './components/DashboardMetricCards';
 import { DashboardObjectProgress } from './components/DashboardObjectProgress';
@@ -51,6 +56,22 @@ export function DashboardPage() {
   const [employees, setEmployees] = useState<DashboardEmployee[]>([]);
   const [events, setEvents] = useState<ShiftEvent[]>([]);
   const [progress, setProgress] = useState<ShiftProgressItem[]>([]);
+
+  const [redAlertCount, setRedAlertCount] = useState(0);
+  const [redAlertCountLoading, setRedAlertCountLoading] = useState(false);
+  const [redAlertCountError, setRedAlertCountError] = useState<string | null>(null);
+  const [redAlertRealtimeOk, setRedAlertRealtimeOk] = useState<boolean | null>(null);
+
+  const loadRedAlertCount = useCallback(async () => {
+    if (!configured) return;
+    const { data, error } = await fetchOpenCriticalRedAlertsCount();
+    if (error) {
+      setRedAlertCountError(error);
+    } else {
+      setRedAlertCountError(null);
+      setRedAlertCount(data);
+    }
+  }, [configured]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +149,23 @@ export function DashboardPage() {
       `dashboard_shift_${shiftFn}_${formatDateForFilename()}.xlsx`,
     );
   };
+
+  useEffect(() => {
+    if (!configured) return;
+    setRedAlertCountLoading(true);
+    void loadRedAlertCount().finally(() => setRedAlertCountLoading(false));
+  }, [configured, loadRedAlertCount]);
+
+  useEffect(() => {
+    if (!configured) return;
+    const unsub = subscribeEquipmentRedAlertsRealtime({
+      onChange: () => void loadRedAlertCount(),
+      onStatus: (s) => setRedAlertRealtimeOk(s === 'SUBSCRIBED'),
+    });
+    return () => {
+      unsub();
+    };
+  }, [configured, loadRedAlertCount]);
 
   return (
     <Stack spacing={3} className={styles.wrap} sx={{ width: '100%' }}>
@@ -252,6 +290,15 @@ export function DashboardPage() {
         <DashboardCriticalAlert
           alert={criticalAlert}
           onView={() => navigate('/defects')}
+        />
+      ) : null}
+
+      {configured ? (
+        <DashboardRedAlertsStrip
+          count={redAlertCount}
+          loading={redAlertCountLoading}
+          error={redAlertCountError}
+          realtimeOk={redAlertRealtimeOk}
         />
       ) : null}
 
