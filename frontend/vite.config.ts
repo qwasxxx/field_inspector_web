@@ -7,7 +7,7 @@ import { defineConfig } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: {
@@ -20,15 +20,20 @@ export default defineConfig({
     port: 5173,
     /** Если 5173 занят старым процессом — не молча переключаться на 5174 (браузер всё ещё на 5173). */
     strictPort: true,
-    proxy: {
-      // В dev запросы на тот же origin (5173) → прокси на FastAPI без CORS и без жёсткой привязки к 127.0.0.1 в браузере.
-      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-      '/health': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-    },
+    /**
+     * Только в `vite dev`. В `vite preview` (Railway) прокси на 127.0.0.1:8000 даёт ECONNREFUSED и 500 на /api, /health.
+     */
+    proxy:
+      mode === 'development'
+        ? {
+            '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+            '/health': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+          }
+        : undefined,
   },
   /** `vite preview` на Railway / других PaaS — иначе «Blocked request: host is not allowed». */
   preview: {
     host: true,
     allowedHosts: true,
   },
-});
+}));
