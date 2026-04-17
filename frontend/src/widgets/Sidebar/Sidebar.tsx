@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { label: 'Дефекты', path: '/defects' },
   { label: 'Аналитика', path: '/analytics' },
   { label: 'Отчёты', path: '/reports' },
+  { label: 'Интеграция 1С', path: '/integration-1c' },
 ];
 
 function isNavSelected(pathname: string, path: string): boolean {

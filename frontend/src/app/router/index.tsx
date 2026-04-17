@@ -19,6 +19,7 @@ import { DefectsPage } from '@/pages/DefectsPage/DefectsPage';
 import { RedAlertsPage } from '@/pages/RedAlertsPage/RedAlertsPage';
 import { ReportDetailPage } from '@/pages/ReportsPage/ReportDetailPage';
 import { ReportsListPage } from '@/pages/ReportsPage/ReportsListPage';
+import { Integration1CPage } from '@/pages/Integration1CPage/Integration1CPage';
 import { MainLayout } from '@/widgets/MainLayout/MainLayout';
 
 export function AppRouter() {
@@ -56,6 +57,7 @@ export function AppRouter() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="reports/:id" element={<ReportDetailPage />} />
         <Route path="reports" element={<ReportsListPage />} />
+        <Route path="integration-1c" element={<Integration1CPage />} />
         <Route path="route/:id" element={<RouteExecutionPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
