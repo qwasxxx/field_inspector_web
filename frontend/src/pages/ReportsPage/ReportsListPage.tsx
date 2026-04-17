@@ -97,7 +97,7 @@ export function ReportsListPage() {
           disabled={loading}
           sx={exportOutlineButtonSx}
         >
-          ⬇ Экспорт Excel
+          Экспорт Excel
         </Button>
       </Box>
 
@@ -111,7 +111,7 @@ export function ReportsListPage() {
           <Typography variant="body2">{error}</Typography>
           {error.includes('permission') || error.includes('RLS') || error.includes('policy') ? (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-              Нужны права на чтение отчётов у роли администратора в базе данных.
+              Недостаточно прав для просмотра отчётов. Обратитесь к администратору.
             </Typography>
           ) : null}
         </Alert>

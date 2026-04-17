@@ -28,13 +28,13 @@ export function TaskRequestsPage() {
         Заявки на задания
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Таблица: <code>inspection_task_requests</code>. Одобрение / отклонение без падения UI при
-        отсутствии API.
+        Заявки обходчиков на новые задания. Одобрите или отклоните запрос — исполнитель получит результат в
+        приложении.
       </Typography>
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Supabase не настроен — действия логируются в консоль.
+          Раздел недоступен: не настроено подключение к данным.
         </Alert>
       ) : null}
       {error ? (
@@ -66,9 +66,7 @@ export function TaskRequestsPage() {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10}>
-                    {configured
-                      ? 'Нет заявок или таблица inspection_task_requests недоступна.'
-                      : '—'}
+                    {configured ? 'Нет заявок или не удалось загрузить список.' : '—'}
                   </TableCell>
                 </TableRow>
               ) : (

@@ -45,7 +45,7 @@ export function emptyDashboardBundle(): DashboardBundle {
       onlineTotal: 0,
     },
     metrics: [
-      { id: 'm1', title: 'Выполнено объектов', value: '—', caption: 'подключите Supabase' },
+      { id: 'm1', title: 'Выполнено объектов', value: '—', caption: 'ожидает данные' },
       { id: 'm2', title: 'Активных обходчиков', value: '—', caption: '—' },
       { id: 'm3', title: 'Дефектов за смену', value: '—', caption: '—' },
       { id: 'm4', title: 'Ср. время на объект', value: '—', caption: `норма: ${NORM_MINUTES} мин` },

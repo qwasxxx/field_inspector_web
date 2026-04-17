@@ -10,7 +10,7 @@ export async function fetchWithSupabaseAccessToken(
 ): Promise<Response> {
   // Пустой VITE_API_BASE_URL в dev: относительные URL → Vite proxy на FastAPI (см. vite.config.ts).
   if (!isSupabaseConfigured()) {
-    throw new Error('Supabase не настроен');
+    throw new Error('Подключение к данным не настроено');
   }
   const supabase = getSupabaseClient();
   const {
@@ -22,7 +22,7 @@ export async function fetchWithSupabaseAccessToken(
   }
   const token = session?.access_token;
   if (!token) {
-    throw new Error('Нет сессии Supabase');
+    throw new Error('Нет активной сессии');
   }
   const headers = new Headers(init.headers);
   headers.set('Authorization', `Bearer ${token}`);

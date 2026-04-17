@@ -169,7 +169,7 @@ export function AnalyticsPage() {
             disabled={loading}
             sx={{ ...exportOutlineButtonSx, mb: 3 }}
           >
-            ⬇ Экспорт Excel
+            Экспорт Excel
           </Button>
 
           <Paper variant="outlined" sx={{ p: 2.5 }}>

@@ -143,7 +143,7 @@ export async function updateNodePosition(
   posX: number,
   posY: number,
 ): Promise<{ error: string | null }> {
-  if (!isSupabaseConfigured()) return { error: 'Supabase не настроен' };
+  if (!isSupabaseConfigured()) return { error: 'Не настроено подключение к данным.' };
   const supabase = getSupabaseClient();
   const { error } = await supabase
     .from('equipment_nodes')

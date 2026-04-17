@@ -90,7 +90,7 @@ export function CreatePatrolFromObjectsModal({
   const handleSubmit = async () => {
     setError(null);
     if (!configured) {
-      setError('Supabase не настроен.');
+      setError('Сервис данных не настроен.');
       return;
     }
     if (!title.trim()) {
@@ -158,7 +158,7 @@ export function CreatePatrolFromObjectsModal({
         <Stack spacing={2}>
           {!configured ? (
             <Alert severity="warning">
-              Задайте <code>VITE_SUPABASE_URL</code> и ключ в <code>.env.local</code>.
+              Сохранение недоступно: подключение к данным не настроено.
             </Alert>
           ) : null}
           {error ? (

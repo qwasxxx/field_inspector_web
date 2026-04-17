@@ -72,20 +72,17 @@ export function AuthForm() {
         <Alert severity="info" icon={false} sx={{ mb: 2, borderRadius: 2 }}>
           {isSupabaseConfigured() ? (
             <>
-              Вход через <strong>Supabase Auth</strong> (email и пароль из вашего
-              проекта). Разделы «Сотрудники», «Задания» и «Входящие запросы» доступны
-              при роли <code>admin</code> в таблице <code>profiles</code>.
+              Войдите с помощью <strong>корпоративной учётной записи</strong> (email и пароль), выданной
+              администратором. Для полного доступа к разделам панели нужны права руководителя.
             </>
           ) : API_BASE ? (
             <>
-              Вход через API: <strong>{API_BASE}</strong>. Учётная запись по
-              умолчанию из сида бэкенда (см. переменные{' '}
-              <code>SEED_ADMIN_EMAIL</code> / <code>SEED_ADMIN_PASSWORD</code>).
+              Вход через сервер организации. Учётные данные выдаёт администратор.
             </>
           ) : (
             <>
-              Демо без API и без Supabase: валидный email и пароль сохраняют флаг
-              в <strong>localStorage</strong>.
+              <strong>Демо-режим:</strong> укажите любой корректный email и пароль для просмотра интерфейса без
+              реальной авторизации.
             </>
           )}
         </Alert>

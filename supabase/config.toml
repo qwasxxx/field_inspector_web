@@ -1,0 +1,15 @@
+# Конфигурация Supabase CLI: https://supabase.com/docs/guides/cli/config
+# После `supabase link` в корне репозитория подставится project_id.
+
+[functions.admin-telegram-notify]
+# Вызов из Database Webhook без JWT пользователя
+verify_jwt = false
+
+[functions.dispatch-planned-inspections]
+# Cron / внешний вызов с service role; опционально секрет CRON_SECRET → заголовок X-Cron-Secret
+verify_jwt = false
+# Автовыдача планов по времени:
+# 1) supabase functions deploy dispatch-planned-inspections
+# 2) Dashboard → Edge Functions → dispatch-planned-inspections → Schedules (Cron) → POST на URL функции
+#    Период, напр. */10 * * * * (каждые 10 мин). Authorization: Bearer <SERVICE_ROLE_KEY>
+#    Если задан CRON_SECRET в Secrets — добавьте заголовок X-Cron-Secret с тем же значением.

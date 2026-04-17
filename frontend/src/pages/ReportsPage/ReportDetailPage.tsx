@@ -36,7 +36,7 @@ export function ReportDetailPage() {
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Подключение к серверу не настроено. Проверьте настройки в файле окружения.
+          Просмотр недоступен: не настроено подключение к данным.
         </Alert>
       ) : null}
       {error ? (

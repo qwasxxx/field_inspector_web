@@ -98,13 +98,13 @@ export function TasksListPage() {
           disabled={loading}
           sx={exportOutlineButtonSx}
         >
-          ⬇ Экспорт Excel
+          Экспорт Excel
         </Button>
       </Box>
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Supabase не настроен.
+          Список недоступен: не настроено подключение к данным.
         </Alert>
       ) : null}
       {error ? (

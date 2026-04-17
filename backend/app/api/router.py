@@ -11,6 +11,7 @@ from app.api.routers import (
     routes,
     supabase_workers,
     sync,
+    telegram_webhook,
 )
 
 api_router = APIRouter()
@@ -22,3 +23,4 @@ api_router.include_router(checklist_templates.router)
 api_router.include_router(sync.router)
 api_router.include_router(planning.router)
 api_router.include_router(supabase_workers.router)
+api_router.include_router(telegram_webhook.router)

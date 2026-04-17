@@ -276,8 +276,8 @@ export function DashboardPage() {
 
       {!configured ? (
         <Alert severity="warning">
-          Задайте VITE_SUPABASE_URL и VITE_SUPABASE_PUBLISHABLE_KEY в frontend/.env.local — иначе дашборд
-          без данных из базы.
+          Данные дашборда не загружаются: не настроено подключение к серверу. Обратитесь к администратору
+          системы.
         </Alert>
       ) : null}
       {loadError ? (

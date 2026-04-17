@@ -37,17 +37,15 @@ function ruPostgrestMessage(
     );
   const stageRu =
     stage === 'tasks'
-      ? 'Запись задания (inspection_tasks)'
+      ? 'Сохранение задания'
       : stage === 'items'
-        ? 'Позиции маршрута (inspection_task_items)'
+        ? 'Сохранение позиций маршрута'
         : stage === 'assignment'
-          ? 'Назначение (inspection_task_assignments)'
+          ? 'Назначение исполнителя'
           : stage === 'list'
             ? 'Загрузка списка заданий'
             : 'Загрузка задания';
-  const rlsRu = rls
-    ? 'Отклонено политикой безопасности (RLS) или недостаточно прав. '
-    : '';
+  const rlsRu = rls ? 'Недостаточно прав доступа. ' : '';
   return `${stageRu}: ${rlsRu}${tech}`.trim();
 }
 
@@ -246,7 +244,7 @@ export async function createInspectionTask(
     return {
       data: { taskId: null },
       error:
-        'Окружение: не заданы VITE_SUPABASE_URL и VITE_SUPABASE_PUBLISHABLE_KEY в frontend/.env.local — сохранение отключено.',
+        'Сохранение недоступно: не настроено подключение к данным.',
     };
   }
 
@@ -278,7 +276,7 @@ export async function createInspectionTask(
       console.error('[inspectionTasksApi.create] session', sessionErr);
       return {
         data: { taskId: null },
-        error: `Сессия Supabase: ${sessionErr.message}`,
+        error: `Ошибка сессии: ${sessionErr.message}`,
       };
     }
     const adminUserId = session?.user?.id;
@@ -287,7 +285,7 @@ export async function createInspectionTask(
       return {
         data: { taskId: null },
         error:
-          'Нет сессии входа Supabase: войдите в панель под учётной записью администратора, затем повторите сохранение.',
+          'Войдите в панель под учётной записью администратора и повторите сохранение.',
       };
     }
 

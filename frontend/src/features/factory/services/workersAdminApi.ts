@@ -27,11 +27,11 @@ function mapNetworkError(e: unknown): string {
       'В режиме разработки запросы проксируются с :5173 на :8000 (см. vite.config.ts).'
     );
   }
-  if (msg === 'Нет сессии Supabase') {
-    return 'Войдите в панель под учётной записью администратора Supabase и повторите.';
+  if (msg === 'Нет активной сессии') {
+    return 'Войдите в панель под учётной записью администратора и повторите.';
   }
-  if (msg === 'Supabase не настроен') {
-    return 'Задайте VITE_SUPABASE_URL и VITE_SUPABASE_PUBLISHABLE_KEY в frontend/.env.local.';
+  if (msg === 'Подключение к данным не настроено') {
+    return 'Подключение к данным не настроено. Обратитесь к администратору.';
   }
   return msg;
 }
@@ -69,7 +69,7 @@ export async function createWorkerAccount(
       } else if (r.status === 403) {
         msg = `Доступ запрещён (403). Нужна роль admin в profiles. ${msg}`;
       } else if (r.status === 503) {
-        msg = `Сервер не настроен (503). Проверьте SUPABASE_* в backend/.env. ${msg}`;
+        msg = `Сервер временно недоступен (503). Обратитесь к администратору. ${msg}`;
       }
       if (import.meta.env.DEV) {
         console.error('[workersAdminApi.create]', r.status, msg);

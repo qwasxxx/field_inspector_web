@@ -67,7 +67,7 @@ export function PassportPanel({ node, open, onClose }: PassportPanelProps) {
                 onClick={() => void generateEquipmentPassportPdf(node)}
                 sx={{ ...exportOutlineButtonSx, py: 0.5, px: 1, fontSize: '0.8125rem' }}
               >
-                ⬇ PDF
+                PDF
               </Button>
               <IconButton aria-label="закрыть" onClick={onClose} size="small">
                 <CloseRoundedIcon />

@@ -70,7 +70,7 @@ export function TaskDetailPage() {
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Supabase не настроен.
+          Карточка недоступна: не настроено подключение к данным.
         </Alert>
       ) : null}
       {error ? (

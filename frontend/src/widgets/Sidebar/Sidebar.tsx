@@ -28,7 +28,6 @@ const navItems: NavItem[] = [
   { label: 'Чаты', path: '/chats' },
   { label: 'Красные тревоги', path: '/red-alerts' },
   { label: 'Планирование обходов', path: '/planning' },
-  { label: 'Чек-листы', path: '/checklist-builder' },
   { label: 'Дефекты', path: '/defects' },
   { label: 'Аналитика', path: '/analytics' },
   { label: 'Отчёты', path: '/reports' },

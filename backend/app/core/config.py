@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
 
+    # Telegram: уведомления админу при INSERT в Supabase (вебхук → POST /api/v1/webhooks/supabase-db).
+    telegram_bot_token: str = ""
+    telegram_chat_ids: str = ""
+    telegram_webhook_secret: str = ""
+    telegram_notify_task_request_medium: bool = False
+
 
 @lru_cache
 def get_settings() -> Settings:

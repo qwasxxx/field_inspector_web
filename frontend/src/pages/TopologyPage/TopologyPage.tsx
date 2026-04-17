@@ -92,7 +92,7 @@ export function TopologyPage() {
     return (
       <Box sx={{ p: 2 }}>
         <Alert severity="warning">
-          Настройте Supabase в <code>frontend/.env.local</code> для раздела «Схема объектов».
+          Раздел недоступен: не настроено подключение к данным. Обратитесь к администратору системы.
         </Alert>
       </Box>
     );

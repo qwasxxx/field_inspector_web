@@ -127,7 +127,7 @@ export function DefectsPage() {
           disabled={loading || !configured}
           sx={exportOutlineButtonSx}
         >
-          ⬇ Экспорт Excel
+          Экспорт Excel
         </Button>
       </Box>
 

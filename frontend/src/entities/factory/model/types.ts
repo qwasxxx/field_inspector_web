@@ -70,6 +70,34 @@ export type TaskRequestRow = {
   [key: string]: unknown;
 };
 
+export type PlannedInspectionStatus = 'scheduled' | 'dispatched' | 'cancelled';
+
+export type PlannedInspectionRow = {
+  id?: string;
+  title?: string | null;
+  site_name?: string | null;
+  area_name?: string | null;
+  shift_label?: string | null;
+  instructions?: string | null;
+  scheduled_at?: string | null;
+  worker_user_id?: string | null;
+  status?: PlannedInspectionStatus | string | null;
+  dispatched_task_id?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type PlannedInspectionItemRow = {
+  id?: string;
+  planned_inspection_id?: string | null;
+  sort_order?: number | null;
+  equipment_name?: string | null;
+  equipment_location?: string | null;
+  equipment_code?: string | null;
+  [key: string]: unknown;
+};
+
 export type SupabaseResult<T> = {
   data: T;
   error: string | null;

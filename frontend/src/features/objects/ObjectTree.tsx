@@ -35,8 +35,8 @@ export function ObjectTree({
     return (
       <Paper variant="outlined" sx={{ borderRadius: 2, p: 3 }}>
         <Typography variant="body2" color="text.secondary">
-          Нет активных узлов в equipment_nodes. Проверьте данные в Supabase и политики RLS (SELECT для
-          authenticated).
+          Нет объектов для отображения. Проверьте, что в системе заведена схема оборудования и у вашей учётной
+          записи есть доступ к просмотру.
         </Typography>
       </Paper>
     );

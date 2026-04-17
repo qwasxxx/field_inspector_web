@@ -1,0 +1,7 @@
+# Railway: https://docs.railway.com/deploy/config-as-code
+# В настройках сервиса укажите Root Directory = backend
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 30

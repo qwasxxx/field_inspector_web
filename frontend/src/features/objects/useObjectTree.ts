@@ -12,7 +12,7 @@ export function useObjectTree() {
   const load = useCallback(async () => {
     if (!isSupabaseConfigured()) {
       setTree([]);
-      setError('Supabase не настроен (проверьте .env).');
+      setError('Не настроено подключение к данным.');
       setLoading(false);
       return;
     }

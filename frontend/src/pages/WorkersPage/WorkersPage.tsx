@@ -150,8 +150,7 @@ export function WorkersPage() {
         Обходчики
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Список профилей с ролью <code>worker</code>. Таблица: <code>profiles</code>. Строка: клик —
-        создать задание с выбранным исполнителем.
+        Полевые исполнители с доступом в мобильное приложение. По строке можно перейти к назначению обхода.
       </Typography>
 
       <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap">
@@ -170,19 +169,19 @@ export function WorkersPage() {
           disabled={!configured}
           sx={exportOutlineButtonSx}
         >
-          ⬇ Экспорт Excel
+          Экспорт Excel
         </Button>
       </Stack>
 
       {!configured ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Supabase не настроен — данные не загрузятся.
+          Список недоступен: не настроено подключение к данным.
         </Alert>
       ) : null}
       {configured && !import.meta.env.DEV && !API_BASE ? (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Для создания обходчиков в production задайте <code>VITE_API_BASE_URL</code> на URL API и
-          держите <code>SUPABASE_SERVICE_ROLE_KEY</code> только в <code>backend/.env</code>.
+          Создание учётных записей обходчиков на этой среде требует настройки сервера. Обратитесь к
+          администратору.
         </Alert>
       ) : null}
       {error ? (
@@ -288,7 +287,7 @@ export function WorkersPage() {
               required
               fullWidth
               autoComplete="new-password"
-              helperText="Минимум 6 символов (требование Supabase Auth)."
+              helperText="Не менее 6 символов."
             />
             <FormControlLabel
               control={
