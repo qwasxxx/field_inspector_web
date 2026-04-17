@@ -15,6 +15,7 @@ import type {
 import type { InspectionTaskAssignmentRow, ProfileRow } from '@/entities/factory/model/types';
 import type { InspectionReportRow } from '@/features/factory/services/inspectionReportsApi';
 import { getSupabaseClient, isSupabaseConfigured } from '@/shared/lib/supabase/client';
+import { formatDateRu, type ShiftInfo } from '@/utils/shiftUtils';
 
 const OFFLINE_MS = 35 * 60 * 1000;
 const NORM_MINUTES = 12;
@@ -123,22 +124,36 @@ function resolveShiftNumberForDisplay(shiftLabel: string | null | undefined): st
   return String(new Date().getDate());
 }
 
+export type BuildDashboardBundleOptions = {
+  /** «Текущее время» для логики онлайн/офлайн (для прошлых смен — конец окна). */
+  referenceMs: number;
+  shiftWindowStartMs: number;
+  shiftWindowEndMs: number;
+  shiftDisplay: { shiftNumber: string; dateLabel: string };
+};
+
 /** @internal exported for tests */
-export function buildDashboardBundle(input: {
-  tasks: Array<{
-    id: string;
-    status: string | null;
-    title?: string | null;
-    shift_label?: string | null;
-    site_name?: string | null;
-    area_name?: string | null;
-    created_at?: string | null;
-  }>;
-  items: Array<{ id: string; task_id: string | null }>;
-  assignments: InspectionTaskAssignmentRow[];
-  reports: InspectionReportRow[];
-  workers: ProfileRow[];
-}): DashboardBundle {
+export function buildDashboardBundle(
+  input: {
+    tasks: Array<{
+      id: string;
+      status: string | null;
+      title?: string | null;
+      shift_label?: string | null;
+      site_name?: string | null;
+      area_name?: string | null;
+      created_at?: string | null;
+    }>;
+    items: Array<{ id: string; task_id: string | null }>;
+    assignments: InspectionTaskAssignmentRow[];
+    reports: InspectionReportRow[];
+    workers: ProfileRow[];
+  },
+  options?: BuildDashboardBundleOptions,
+): DashboardBundle {
+  const referenceMs = options?.referenceMs ?? Date.now();
+  const windowStart = options?.shiftWindowStartMs ?? startOfLocalDay().getTime();
+  const windowEnd = options?.shiftWindowEndMs ?? Number.MAX_SAFE_INTEGER;
   const taskById = new Map(input.tasks.map((t) => [t.id, t]));
   const itemsByTask = new Map<string, string[]>();
   for (const it of input.items) {
@@ -176,7 +191,7 @@ export function buildDashboardBundle(input: {
     input.workers.map((w) => w.id).filter(Boolean) as string[],
   );
   const onlineWorkers = new Set<string>();
-  const now = Date.now();
+  const now = referenceMs;
   for (const a of input.assignments) {
     if (!a.is_active || !a.worker_user_id) continue;
     const st = a.execution_status;
@@ -234,24 +249,33 @@ export function buildDashboardBundle(input: {
     '—';
   const siteLabel = siteLabelRaw === '—' ? '—' : siteLabelRaw;
 
-  const shiftContext: ShiftContext = {
-    shiftNumber: resolveShiftNumberForDisplay(shiftLabel === '—' ? null : String(shiftLabel)),
-    dateLabel: todayDateLabel(),
-    siteLabel,
-    onlineCurrent: onlineWorkers.size,
-    onlineTotal: Math.max(
-      input.workers.filter((w) => w.is_active !== false).length,
-      activeWorkerIds.size,
-    ),
-  };
+  const shiftContext: ShiftContext = options
+    ? {
+        shiftNumber: options.shiftDisplay.shiftNumber,
+        dateLabel: options.shiftDisplay.dateLabel,
+        siteLabel,
+        onlineCurrent: onlineWorkers.size,
+        onlineTotal: Math.max(
+          input.workers.filter((w) => w.is_active !== false).length,
+          activeWorkerIds.size,
+        ),
+      }
+    : {
+        shiftNumber: resolveShiftNumberForDisplay(shiftLabel === '—' ? null : String(shiftLabel)),
+        dateLabel: todayDateLabel(),
+        siteLabel,
+        onlineCurrent: onlineWorkers.size,
+        onlineTotal: Math.max(
+          input.workers.filter((w) => w.is_active !== false).length,
+          activeWorkerIds.size,
+        ),
+      };
 
-  const dayStart = startOfLocalDay().getTime();
-  const defectsToday = input.reports.filter(
-    (r) =>
-      r.defect_found &&
-      r.created_at &&
-      Date.parse(String(r.created_at)) >= dayStart,
-  );
+  const defectsToday = input.reports.filter((r) => {
+    if (!r.defect_found || !r.created_at) return false;
+    const t = Date.parse(String(r.created_at));
+    return !Number.isNaN(t) && t >= windowStart && t < windowEnd;
+  });
   const criticalDefectsToday = defectsToday.filter(
     (r) =>
       String(r.defect_priority ?? '').toLowerCase() === 'high' ||
@@ -482,40 +506,76 @@ export function buildDashboardBundle(input: {
   };
 }
 
-export async function fetchDashboardBundle(): Promise<DashboardFetchResult> {
+const ASSIGNMENT_SELECT =
+  'id,task_id,worker_user_id,is_active,execution_status,last_progress_at,assigned_at,duration_minutes';
+
+export async function fetchDashboardBundle(shift: ShiftInfo): Promise<DashboardFetchResult> {
   if (!isSupabaseConfigured()) {
     return { data: null, error: null };
   }
   const supabase = getSupabaseClient();
+  const startISO = shift.startTime.toISOString();
+  const endISO = shift.endTime.toISOString();
+  const referenceMs = Math.min(Date.now(), shift.endTime.getTime());
+  const shiftWindowStartMs = shift.startTime.getTime();
+  const shiftWindowEndMs = shift.endTime.getTime();
+
   try {
-    const [tasksRes, workersRes, itemsRes, assignRes, repRes] = await Promise.all([
+    const [repRes, assignByAssignedAt, assignByProgress, workersRes] = await Promise.all([
       supabase
-        .from('inspection_tasks')
-        .select('id,title,status,shift_label,site_name,area_name,created_at')
+        .from('inspection_reports')
+        .select('*')
+        .gte('created_at', startISO)
+        .lt('created_at', endISO)
+        .order('created_at', { ascending: false })
         .limit(500),
-      supabase.from('profiles').select('*').eq('role', 'worker').eq('is_active', true).limit(200),
-      supabase.from('inspection_task_items').select('id,task_id').limit(5000),
       supabase
         .from('inspection_task_assignments')
-        .select(
-          'id,task_id,worker_user_id,is_active,execution_status,last_progress_at,assigned_at,duration_minutes',
-        )
+        .select(ASSIGNMENT_SELECT)
         .eq('is_active', true)
+        .gte('assigned_at', startISO)
+        .lt('assigned_at', endISO)
         .limit(500),
-      supabase.from('inspection_reports').select('*').order('created_at', { ascending: false }).limit(300),
+      supabase
+        .from('inspection_task_assignments')
+        .select(ASSIGNMENT_SELECT)
+        .eq('is_active', true)
+        .gte('last_progress_at', startISO)
+        .lt('last_progress_at', endISO)
+        .limit(500),
+      supabase.from('profiles').select('*').eq('role', 'worker').eq('is_active', true).limit(200),
     ]);
 
     const err =
-      tasksRes.error?.message ||
-      workersRes.error?.message ||
-      itemsRes.error?.message ||
-      assignRes.error?.message ||
-      repRes.error?.message;
+      repRes.error?.message ||
+      assignByAssignedAt.error?.message ||
+      assignByProgress.error?.message ||
+      workersRes.error?.message;
     if (err) {
       return { data: null, error: err };
     }
 
-    const tasks = (tasksRes.data ?? []) as Array<{
+    const assignmentMap = new Map<string, InspectionTaskAssignmentRow>();
+    for (const row of assignByAssignedAt.data ?? []) {
+      const id = (row as { id?: string }).id;
+      if (id) assignmentMap.set(id, row as InspectionTaskAssignmentRow);
+    }
+    for (const row of assignByProgress.data ?? []) {
+      const id = (row as { id?: string }).id;
+      if (id) assignmentMap.set(id, row as InspectionTaskAssignmentRow);
+    }
+    const assignments = [...assignmentMap.values()];
+
+    const reports = (repRes.data ?? []) as InspectionReportRow[];
+    const taskIds = new Set<string>();
+    for (const r of reports) {
+      if (r.task_id) taskIds.add(String(r.task_id));
+    }
+    for (const a of assignments) {
+      if (a.task_id) taskIds.add(String(a.task_id));
+    }
+
+    let tasks: Array<{
       id: string;
       title?: string | null;
       status: string | null;
@@ -523,19 +583,46 @@ export async function fetchDashboardBundle(): Promise<DashboardFetchResult> {
       site_name?: string | null;
       area_name?: string | null;
       created_at?: string | null;
-    }>;
-    const taskIds = new Set(tasks.map((t) => t.id));
-    const items = (itemsRes.data ?? []).filter(
-      (it: { task_id?: string | null }) => it.task_id && taskIds.has(String(it.task_id)),
-    ) as Array<{ id: string; task_id: string | null }>;
+    }> = [];
+    let items: Array<{ id: string; task_id: string | null }> = [];
 
-    const bundle = buildDashboardBundle({
-      tasks,
-      items,
-      assignments: (assignRes.data ?? []) as InspectionTaskAssignmentRow[],
-      reports: (repRes.data ?? []) as InspectionReportRow[],
-      workers: (workersRes.data ?? []) as ProfileRow[],
-    });
+    if (taskIds.size > 0) {
+      const ids = [...taskIds];
+      const [tasksRes, itemsRes] = await Promise.all([
+        supabase
+          .from('inspection_tasks')
+          .select('id,title,status,shift_label,site_name,area_name,created_at')
+          .in('id', ids),
+        supabase.from('inspection_task_items').select('id,task_id').in('task_id', ids).limit(5000),
+      ]);
+      if (tasksRes.error?.message || itemsRes.error?.message) {
+        return {
+          data: null,
+          error: tasksRes.error?.message || itemsRes.error?.message || 'Ошибка загрузки заданий',
+        };
+      }
+      tasks = (tasksRes.data ?? []) as typeof tasks;
+      items = (itemsRes.data ?? []) as typeof items;
+    }
+
+    const bundle = buildDashboardBundle(
+      {
+        tasks,
+        items,
+        assignments,
+        reports,
+        workers: (workersRes.data ?? []) as ProfileRow[],
+      },
+      {
+        referenceMs,
+        shiftWindowStartMs,
+        shiftWindowEndMs,
+        shiftDisplay: {
+          shiftNumber: String(shift.number),
+          dateLabel: `${formatDateRu(shift.date)} г.`,
+        },
+      },
+    );
     return { data: bundle, error: null };
   } catch (e) {
     return {
